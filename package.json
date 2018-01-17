@@ -1,0 +1,42 @@
+{
+  "name": "dib",
+  "version": "1.0.0",
+  "description": "Distributed ImageBoard, based on OrbitDB",
+  "main": "",
+  "dependencies": {
+    "@types/node": "^9.3.0",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babelify": "^8.0.0",
+    "buffer": "^5.0.8",
+    "css-loader": "^0.28.8",
+    "file-loader": "^1.1.6",
+    "ipfs": "^0.27.6",
+    "ipfs-log": "^4.0.6",
+    "node-sass": "^4.7.2",
+    "normalize.css": "^7.0.0",
+    "orbit-db": "^0.19.2",
+    "sass-loader": "^6.0.6",
+    "ts-loader": "^3.2.0",
+    "typescript": "^2.6.2",
+    "vue": "^2.5.13",
+    "vue-class-component": "^6.1.2",
+    "vue-loader": "^13.7.0",
+    "vue-style-loader": "^3.0.3",
+    "vue-template-compiler": "^2.5.13",
+    "webpack": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.92",
+    "webpack-dev-server": "^2.11.0"
+  },
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack-dev-server --hot"
+  },
+  "keywords": [
+    "IPFS"
+  ],
+  "author": "Braeden Mollot <3mollot (at) gmail (dot) com>",
+  "license": "ISC"
+}

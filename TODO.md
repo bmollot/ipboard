@@ -1,0 +1,58 @@
+- Styling - themes?
+- File uploading
+- File posting
+  - Image
+  - Audio
+  - Gif
+  - Video
+
+Application flow
+Welcome/Loading > Board view (default aggregate board) > Thread view
+                > Collapsable control panel
+
+- Liveposting?
+  - interaction with spoiler tags?
+- Mobile - "responsive design", so breakpoints
+- Loading indicators - pretty ones tho
+  - Starting Vue
+  - Starting IPFS
+  - Replicating history
+- Welcome page
+- Nicknames
+- Thread list?
+  - Boards
+    - Board list?
+- Text commands
+  - Hash-based RNG
+    - dice
+    - range
+  - Per-thread text processing
+- Replies
+- Hide posts
+- Link parsing
+  - Web
+    - generic
+    - media
+      - image
+        - generic
+        - imgur
+      - audio
+       - generic
+       - sc
+      - gif
+      - video
+        - generic
+        - yt
+        - imgur gifv
+    - external boards - threads/posts
+      - 4chan
+      - 8chan
+      - 2ch
+      - meguca
+  - ipfs/ipns
+    - media
+      - image
+      - audio
+      - video
+    - internal post references
+  - thread ids
