@@ -29,6 +29,6 @@ export default class PostContainer extends Vue {
 
 <style lang="sass">
 .post-container
-  background: grey
+  background: blue
 </style>
 

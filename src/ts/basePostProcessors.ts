@@ -1,5 +1,5 @@
 import {Post} from 'types/post'
-import PostProcessor from 'types/postProcessor'
+import {PostProcessor, makePostProcessor} from 'types/postProcessor'
 import PPE from 'types/postProcessorEnvironment'
 import RNG from 'types/rng'
 
@@ -15,10 +15,13 @@ const baseRandGroup = "base/rand"
  * Basic functionality
  */
 // Seriously, don't disable this one
-const htmlEscape: PostProcessor = _.assign((post: Post, env: PPE) => {
-  post.text = escapeHtml(post.text)
-  return post
-}, {name: "htmlEscape", author: izAuth, group: baseGroup})
+const htmlEscape = makePostProcessor(
+  ["htmlEscape", izAuth, baseGroup],
+  (post: Post, env: PPE) => {
+    post.text = escapeHtml(post.text)
+    return post
+  }
+)
 
 /*
  * Die rolling and other randomized nicknacks 
@@ -26,15 +29,15 @@ const htmlEscape: PostProcessor = _.assign((post: Post, env: PPE) => {
 type Replacer = (substring: string, ...args: any[]) => string
 type Env_Replacer = (env: PPE) => Replacer
 type NameAuthGroup = [string, string, string]
-function mkReplaceFn(name: string | NameAuthGroup, regex: RegExp, fn: Env_Replacer): PostProcessor {
+function mkReplaceFn(id: string | NameAuthGroup, regex: RegExp, fn: Env_Replacer): PostProcessor {
   let processor: PostProcessor
   processor = _.assign((post: Post, ppe: PPE) => {
     post.text = post.text.replace(regex, fn(ppe))
     return post
-  }, typeof name === 'string' ? {name: name} : {
-    name: name[0],
-    author: name[1],
-    group: name[2],
+  }, typeof id === 'string' ? {id: id} : {
+    id: id[0],
+    author: id[1],
+    group: id[2],
   })
   return processor
 }

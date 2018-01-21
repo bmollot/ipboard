@@ -1,7 +1,7 @@
 import MWC from 'utils/mwc'
 import hashCode from 'utils/hashCode'
 import escapeHtml from 'utils/escapeHtml'
-import PostProcessor from 'types/postProcessor'
+import {PostProcessor} from 'types/postProcessor'
 import PPE from 'types/postProcessorEnvironment'
 import {UnPost, Post} from 'types/post'
 import * as basePostProcessors from 'ts/basePostProcessors'
