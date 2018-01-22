@@ -12,6 +12,9 @@ Application flow
 Welcome/Loading > Board view (default aggregate board) > Thread view
                 > Collapsable control panel
 
+- Limit viewed posts to N
+  - initial
+  - pruning old posts
 - Liveposting?
   - interaction with spoiler tags?
 - Mobile - "responsive design", so breakpoints
@@ -21,6 +24,8 @@ Welcome/Loading > Board view (default aggregate board) > Thread view
   - Replicating history
 - Welcome page
 - Nicknames
+  - Client authenticated
+  - User chosen
 - Thread list?
   - Boards
     - Board list?

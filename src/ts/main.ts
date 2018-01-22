@@ -33,6 +33,15 @@ _.assign(window, {
 
 import App from 'comp/App.vue'
 import Loading from 'comp/Loading.vue'
+
+// Import here, even though they aren't use, or else HardSourceWebpackPlugin breaks
+import 'comp/ControlPanel.vue'
+import 'comp/PostContainer.vue'
+import 'comp/PostList.vue'
+import 'comp/ThreadFooter.vue'
+import 'comp/ThreadView.vue'
+
+
 // Init root Vue node
 const vm = new Vue({
   el: '#root',

@@ -17,14 +17,12 @@
   "devDependencies": {
     "@types/lodash": "^4.14.92",
     "@types/node": "^9.3.0",
-    "autodll-webpack-plugin": "^0.3.8",
     "chunk-manifest-webpack-plugin": "^1.1.2",
     "clean-webpack-plugin": "^0.1.17",
     "css-loader": "^0.28.8",
     "file-loader": "^1.1.6",
     "html-loader": "^0.5.4",
     "html-webpack-plugin": "^2.30.1",
-    "parcel-bundler": "github:parcel-bundler/parcel#vue",
     "sass-loader": "^6.0.6",
     "ts-loader": "^3.2.0",
     "typescript": "^2.6.2",
@@ -36,10 +34,12 @@
     "webpack-bundle-analyzer": "^2.9.2"
   },
   "scripts": {
+    "clean": "rm -rf dist",
+    "purge": "rm -rf node_modules/.cache",
     "build": "webpack",
-    "build-vendor": "webpack --config webpack.vendor.js",
     "build-prod": "export NODE_ENV=production; webpack",
-    "dev": "http-server ./dist -c-1"
+    "dev": "http-server ./dist -c-1",
+    "reinstall": "rm -rf node_modules; npm install"
   },
   "keywords": [
     "IPFS"

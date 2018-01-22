@@ -2,7 +2,6 @@ const webpack = require('webpack')
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ChunkManifestPlugin = require('chunk-manifest-webpack-plugin')
-const AutoDllPlugin = require('autodll-webpack-plugin')
 const HardSourceWebpackPlugin = require('hard-source-webpack-plugin')
 
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
@@ -16,47 +15,6 @@ const isDev = !isProd
 const doViz = process.env.VIZ !== undefined
 console.log(`Build type: [${isProd ? "production" : "development"}]`)
 console.log(`Emitting bundle analysis? [${doViz ? "yes" : "no"}]`)
-
-let autoDllPlugins = [
-  new webpack.DefinePlugin({
-    'process.env': {
-      NODE_ENV: '"production"'
-    }
-  }),
-  new webpack.HashedModuleIdsPlugin(),
-  new webpack.LoaderOptionsPlugin({
-    minimize: true
-  }),
-]
-if (isProd) {
-  autoDllPlugins.push(
-    new UglifyJsPlugin({
-      sourceMap: false,
-      parallel: true,
-      cache: true,
-      uglifyOptions: {
-        ecma: 8,
-        mangle: {
-          keep_classnames: true,
-        },
-        compress: {
-          keep_classnames: true,
-        },
-      },
-    })
-  )
-}
-const autoDll = new AutoDllPlugin({
-  // context: __dirname,
-  inject: true,
-  inherit: true,
-  filename: "[name].[hash].js",
-  entry: {
-    deps: Object.keys(pkg.dependencies)
-  },
-  debug: true,
-  plugins: autoDllPlugins,
-})
 
 // Default exports
 module.exports = {
@@ -111,7 +69,15 @@ module.exports = {
     ]
   },
   plugins: [
-    new HardSourceWebpackPlugin(),
+    new HardSourceWebpackPlugin({
+      configHash: function(webpackConfig) {
+        return require('node-object-hash')({sort: false}).hash({
+          webpackConfig,
+          isProd,
+          doViz,
+        })
+      }
+    }),
     new CleanWebpackPlugin(['dist']),
     new HtmlWebpackPlugin({
       title: "dib",
@@ -119,7 +85,18 @@ module.exports = {
       hash: true,
       cache: true,
     }),
-    autoDll,
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor',
+      minChunks: function(module) {
+        return module.context && module.context.includes("node_modules")
+      },
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'borc',
+      minChunks: function(module) {
+        return module.context && module.context.includes("borc")
+      },
+    }),
     new webpack.optimize.CommonsChunkPlugin({
       name: 'manifest',
       minChunks: Infinity,
@@ -163,12 +140,18 @@ if (isProd) {
       }
     }),
     new UglifyJsPlugin({
-      // exclude: /borc/, // Uglify breaks asm.js
+      exclude: /borc/, // Uglify breaks asm.js
       sourceMap: false,
       parallel: true,
       cache: true,
       uglifyOptions: {
         ecma: 8,
+        mangle: {
+          keep_classnames: true,
+        },
+        compress: {
+          keep_classnames: true,
+        }
       },
     }),
     new webpack.HashedModuleIdsPlugin(),
