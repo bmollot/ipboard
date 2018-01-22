@@ -1,6 +1,10 @@
 <template>
   <div class="thread-view">
-    {{ thread.address }}
+    <thread-control
+      :thread="thread"
+      @new-post="post"
+      @changed-thread="updateViewedThread"
+    ></thread-control>
     <post-list :posts="posts"></post-list>
     <thread-footer @new-post="post"></thread-footer>
   </div>
@@ -10,21 +14,28 @@
 import Vue from 'vue'
 import Component from 'vue-class-component'
 
+import ThreadControl from 'comp/ThreadControl.vue'
 import PostList from 'comp/PostList.vue'
 import ThreadFooter from 'comp/ThreadFooter.vue'
 
 import Thread from 'types/thread'
 
 @Component({
-  props: ['thread'],
   components: {
+    'thread-control': ThreadControl,
     'post-list': PostList,
     'thread-footer': ThreadFooter,
   }
 })
 export default class ThreadView extends Vue {
-  thread: Thread
+  thread: Thread = new Thread('welcome')
+  created() {
+    this.thread.init(this.db)
+  }
 
+  get db() {
+    return this.$store.state.database
+  }
   get posts() {
     return this.thread.posts
   }
@@ -32,9 +43,10 @@ export default class ThreadView extends Vue {
   post(msg: string) {
     this.thread.post(msg)
   }
-
-  created() {
-    (<any> window).bus.$on('new-post', this.post)
+  updateViewedThread(newThreadId: string) {
+    this.thread.destroy()
+    this.thread = new Thread(newThreadId)
+    this.thread.init(this.db)
   }
 }
 </script>

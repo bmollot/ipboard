@@ -2,61 +2,48 @@
 import 'normalize.css'
 import 'styles/base.sass'
 
-// Import here, even though they aren't use, or else HardSourceWebpackPlugin breaks
+/* 
+ * Import .vue files here, even though they aren't used, or else HardSourceWebpackPlugin breaks.
+ * This seems to be a specific issue with importing .vue files from a <script lang="ts"> block in
+ * another .vue file. ¯\_(ツ)_/¯
+ */
 import 'comp/ControlPanel.vue'
+import 'comp/Loading.vue'
 import 'comp/PostContainer.vue'
 import 'comp/PostList.vue'
+import 'comp/ThreadControl.vue'
 import 'comp/ThreadFooter.vue'
 import 'comp/ThreadView.vue'
 
-import Thread from 'types/thread.js'
+// Deps
 import Vue from 'vue'
+import {mapGetters} from 'vuex'
+import * as _ from 'lodash'
+import Thread from 'types/thread.js'
+import store from './store'
+
+// Legacy imports
 const Ipfs = require('ipfs')
 const OrbitDB = require('orbit-db')
 
-import * as _ from 'lodash'
+// Setup
+import ipfsConfig from 'utils/ipfs.config'
+const node = new Ipfs(ipfsConfig)
 
-function repo() {
-  return 'ipfs/ipboard/' + Math.random()
-}
-const node = new Ipfs({
-  repo: repo(),
-  config: {
-    Addresses: {
-      Swarm: [
-        '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
-      ],
-    },
-  },
-  EXPERIMENTAL: {
-    pubsub: true,
-  },
-})
-
-_.assign(window, {
-  bus: new Vue(),
-  node: node,
-})
-
-import App from 'comp/App.vue'
-import Loading from 'comp/Loading.vue'
 // Init root Vue node
+import App from 'comp/App.vue'
 const vm = new Vue({
   el: '#root',
-  data: {
-    dbReady: false,
-    db: null,
-  },
+  store,
+  computed: mapGetters(['dbReady']),
   components: {
     'app': App,
-    'loading': Loading,
   },
 })
-
+// Show spinner until IPFS is ready
 node.once('ready', () => node.id((err: Error, info: any) => {
   if (err) throw err
-  console.log('IPFS node id: ' + info.id)
   const orbit = new OrbitDB(node)
-  vm.db = orbit
-  vm.dbReady = true
+  store.commit('updateIpfsNode', {newIpfsNode: node, newInfo: info})
+  store.commit('updateDB', {newDB: orbit})
 }))

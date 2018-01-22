@@ -1,39 +1,36 @@
 <template>
   <div class="app">
-      <control-panel :thread="currentThread" @changed-thread="updateViewedThread"></control-panel>
-      <thread-view :thread="currentThread"></thread-view>
+      <control-panel></control-panel>
+      <thread-view v-if="dbReady"></thread-view>
+      <loading v-else></loading>
   </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
 import Component from 'vue-class-component'
+import {mapState} from 'vuex'
 
 import ControlPanel from 'comp/ControlPanel.vue'
 import ThreadView from 'comp/ThreadView.vue'
+import Loading from 'comp/Loading.vue'
 
 import Thread from 'types/thread'
 
 @Component({
-  props: ['db'],
   components: {
     'control-panel': ControlPanel,
     'thread-view': ThreadView,
+    'loading': Loading,
   }
 })
 export default class App extends Vue {
-  db: any
 
-  currentThread = new Thread('test-thread')
-
-  created() {
-    this.currentThread.init(this.db)
+  get db() {
+    return this.$store.state.ipfsNode
   }
-
-  updateViewedThread(newThreadId: string) {
-    this.currentThread.destroy()
-    this.currentThread = new Thread(newThreadId)
-    this.currentThread.init(this.db)
+  get dbReady() {
+    return this.$store.getters.isDBReady
   }
 }
 </script>

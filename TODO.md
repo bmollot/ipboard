@@ -1,4 +1,4 @@
-- Vuexify everything
+- synched peers list
 
 - Styling - themes?
 - File uploading
