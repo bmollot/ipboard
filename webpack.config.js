@@ -110,24 +110,13 @@ module.exports = {
       utils: path.resolve(__dirname, "./src/ts/utils/"),
       ts: path.resolve(__dirname, "./src/ts/"),
       styles: path.resolve(__dirname, "./src/styles/"),
-      html: path.resolve(__dirname, "./src/html/"),
     },
     extensions: ['.ts', '.js', '.vue', '.json'],
   },
-
   performance: {
     hints: false
   },
-
   devtool: "cheap-module-eval-source-map",
-  devServer: {
-    historyApiFallback: true,
-    noInfo: true,
-    overlay: false,
-    contentBase: './dist',
-    hot: false,
-    lazy: true,
-  },
 }
 
 // Production only

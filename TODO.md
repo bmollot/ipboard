@@ -1,4 +1,4 @@
-Accelerate compiles
+- Vuexify everything
 
 - Styling - themes?
 - File uploading
@@ -12,6 +12,9 @@ Application flow
 Welcome/Loading > Board view (default aggregate board) > Thread view
                 > Collapsable control panel
 
+- OrbitDB type bindings
+- Improve IPFS type bindings
+- bans?
 - Limit viewed posts to N
   - initial
   - pruning old posts

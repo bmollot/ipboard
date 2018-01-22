@@ -2,6 +2,13 @@
 import 'normalize.css'
 import 'styles/base.sass'
 
+// Import here, even though they aren't use, or else HardSourceWebpackPlugin breaks
+import 'comp/ControlPanel.vue'
+import 'comp/PostContainer.vue'
+import 'comp/PostList.vue'
+import 'comp/ThreadFooter.vue'
+import 'comp/ThreadView.vue'
+
 import Thread from 'types/thread.js'
 import Vue from 'vue'
 const Ipfs = require('ipfs')
@@ -33,15 +40,6 @@ _.assign(window, {
 
 import App from 'comp/App.vue'
 import Loading from 'comp/Loading.vue'
-
-// Import here, even though they aren't use, or else HardSourceWebpackPlugin breaks
-import 'comp/ControlPanel.vue'
-import 'comp/PostContainer.vue'
-import 'comp/PostList.vue'
-import 'comp/ThreadFooter.vue'
-import 'comp/ThreadView.vue'
-
-
 // Init root Vue node
 const vm = new Vue({
   el: '#root',
