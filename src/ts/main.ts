@@ -1,6 +1,7 @@
 // Import styles for bundling
 import 'normalize.css'
-import 'styles/base.sass'
+import 'styles/base.scss'
+import 'styles/basePostProcessors.scss'
 
 /* 
  * Import .vue files here, even though they aren't used, or else HardSourceWebpackPlugin breaks.
@@ -21,15 +22,39 @@ import {mapGetters} from 'vuex'
 import * as _ from 'lodash'
 import Thread from 'types/thread.js'
 import store from './store'
+import isProd from 'utils/isProd'
+import UserConfig from 'types/userConfig';
 
 // Legacy imports
 const Ipfs = require('ipfs')
 const OrbitDB = require('orbit-db')
 
-// Setup
+// Set up IPFS
 import ipfsConfig from 'utils/ipfs.config'
 const node = new Ipfs(ipfsConfig)
 
+// Retrieve user profile configs from storage backend
+store.state.globalConfig.getResolve<string[]>('users').then(
+  userStrings => {
+    let users = userStrings || []
+    if (userStrings === undefined) {
+      store.state.globalConfig.put('users', ['default'])
+      users = ['default']
+    }
+    users.forEach(userName => {
+      store.dispatch('addUserConfig', new UserConfig(userName))
+    })
+  }
+)
+
+// Register a global custom directive called `v-focus`
+Vue.directive('focus', {
+  // When the bound element is inserted into the DOM...
+  inserted: function (el) {
+    // Focus the element
+    el.focus()
+  }
+})
 // Init root Vue node
 import App from 'comp/App.vue'
 const vm = new Vue({

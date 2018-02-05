@@ -1,23 +1,47 @@
-- synched peers list
-
-- Styling - themes?
-- File uploading
 - File posting
   - Image
   - Audio
   - Gif
   - Video
 
-Application flow
-Welcome/Loading > Board view (default aggregate board) > Thread view
-                > Collapsable control panel
+- syncwatch
+- spoiler tags
+- bold
+- italics
+- preformatted
+- selection rolls
+- 8ball
 
-- OrbitDB type bindings
-- Improve IPFS type bindings
-- bans?
+- more effecient entry => post parsing (maybe don't recalc them every time there's a change)
+
+- nicer buttons
+- code highlighting
+
+- global user profile
+- user profile editing
+
 - Limit viewed posts to N
   - initial
   - pruning old posts
+  
+
+- preProcessors
+
+- img2text
+
+- Optionally use IPFS gateway rather than js-ipfs
+- Port client
+  - CLI
+  - Election
+  - Native?
+
+
+- Styling - themes?
+- File uploading
+
+- OrbitDB type bindings
+- IPFS type bindings
+- bans?
 - Liveposting?
   - interaction with spoiler tags?
 - Mobile - "responsive design", so breakpoints
@@ -27,8 +51,8 @@ Welcome/Loading > Board view (default aggregate board) > Thread view
   - Replicating history
 - Welcome page
 - Nicknames
-  - Client authenticated
   - User chosen
+  - Client authenticated
 - Thread list?
   - Boards
     - Board list?
@@ -38,7 +62,6 @@ Welcome/Loading > Board view (default aggregate board) > Thread view
     - range
   - Per-thread text processing
 - Replies
-- Hide posts
 - Link parsing
   - Web
     - generic

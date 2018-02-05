@@ -1,4 +1,4 @@
-import {Post} from "types/post"
+import {Post, UnPost} from "types/post"
 import PPE from 'types/postProcessorEnvironment'
 
 import * as _ from 'lodash'
@@ -6,6 +6,13 @@ import * as _ from 'lodash'
 interface PostProcessor {
   (post: Post, env: PPE): Post,
   
+  id: string,
+  author?: string,
+  group?: string,
+}
+interface PreProcessor {
+  (post: UnPost, env: PPE): UnPost,
+
   id: string,
   author?: string,
   group?: string,
@@ -31,5 +38,16 @@ function makePostProcessor(id: string | [string, string, string], fn: (post: Pos
     })
   }
 }
+function makePreProcessor(id: string | [string, string, string], fn: (post: UnPost, env: PPE) => UnPost): PreProcessor {
+  if (typeof id === 'string') {
+    return _.assign(fn, {id: id})
+  } else {
+    return _.assign(fn, {
+      id: id[0],
+      author: id[1],
+      group: id[2],
+    })
+  }
+}
 
-export {PostProcessor, makePostProcessor}
+export {PostProcessor, makePostProcessor, PreProcessor, makePreProcessor}

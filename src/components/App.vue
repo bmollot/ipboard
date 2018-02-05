@@ -1,8 +1,8 @@
 <template>
   <div class="app">
-      <control-panel></control-panel>
-      <thread-view v-if="dbReady"></thread-view>
-      <loading v-else></loading>
+    <control-panel></control-panel>
+    <thread-view v-if="dbReady"></thread-view>
+    <loading v-else></loading>
   </div>
 </template>
 
@@ -32,6 +32,7 @@ export default class App extends Vue {
   get dbReady() {
     return this.$store.getters.isDBReady
   }
+
 }
 </script>
 

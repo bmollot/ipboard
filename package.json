@@ -7,6 +7,7 @@
     "buffer": "^5.0.8",
     "hard-source-webpack-plugin": "^0.5.16",
     "ipfs": "^0.27.6",
+    "js-promisify": "^1.1.0",
     "lodash": "^4.17.4",
     "node-sass": "^4.7.2",
     "normalize.css": "^7.0.0",
