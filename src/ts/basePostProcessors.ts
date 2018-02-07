@@ -46,7 +46,7 @@ const limitLength = makePostProcessor(
 // Turn formatted post ids into links to that post
 const postLink = makePostProcessor(
   ["postlink", izAuth, baseGroup],
-  (post) => {
+  (post, env) => {
     post.text = post.text.replace(
       /(&gt;&gt;)([0-z]{46})(\s|$)/g,
       (match: string, prefix: string, postId: string, trailing: string): string => {
@@ -56,7 +56,24 @@ const postLink = makePostProcessor(
           group: 'references',
           message: postId,
         })
-        return `<a class="post-post-link" href="#post-${postId}">${prefix + postId}#${trailing}</a>`
+        let you = ""
+        let unknown = false
+        const referencedPost = env.kv.self._postById[postId]
+        const nodeId = env.kv.nodeId
+        if (referencedPost) {
+          // Add a (You) if the post being referenced is yours
+          if (nodeId === referencedPost.fromId) {
+            you = " (You)"
+          }
+        }
+        // References unknown post, make note of that
+        else {
+          unknown = true
+          you = " (?)"
+        }
+        const el = unknown ? 'span' : 'a'
+        const href = unknown ? '' : `href="#post-${postId}"`
+        return `<${el} class="post-post-link" ${href}>${prefix + postId + you}#${trailing}</${el}>`
       }
     )
     

@@ -13,10 +13,10 @@ import { defaultProfile, Profile } from 'types/profile'
 import {MAX_UNPOST_SIZE_BYTES, MAX_POST_SIZE_BYTES} from 'ts/constants'
 
 interface String_Post {
-  [id: string]: Post
+  [id: string]: Post | undefined
 }
 interface String_Notes {
-  [id: string]: Note[]
+  [id: string]: Note[] | undefined
 }
 
 export default class Thread {
@@ -25,7 +25,12 @@ export default class Thread {
   synced: string[] = []
   address: string = ""
   backlogReplicated: boolean = false
+  replicationProgress: {done: number | null, target: number | null} = {
+    done: null,
+    target: null,
+  }
   postProcessors: PostProcessor[]
+  _clocks: {[id: string]: number | undefined} = {}
   _backNotes: String_Notes = {}
   _postById: String_Post = {}
   _haveNeededPosts: boolean = false
@@ -49,7 +54,7 @@ export default class Thread {
     this.address = log.address.toString()
     log.events.on('replicated', this.onEntryHandler.bind(this, 'remote'))
     log.events.on('write', this.onEntryHandler.bind(this, 'self'))
-    // log.events.on('replicate.progress', this.progressHandler.bind(this))
+    log.events.on('replicate.progress', this.progressHandler.bind(this))
     this._pubSubHandlerInstance = this._pubSubHandler.bind(this)
     this._pubsub.subscribe(this.address, this._pubSubHandlerInstance)
   }
@@ -124,8 +129,13 @@ export default class Thread {
       console.error("Refused to send a post of size " + size + "B")
     }
   }
-  progressHandler(fromAddress: string, entryHash: string, entry: any, progress: any, haveMap: any) {
-    console.log("PROGRESS", fromAddress, entryHash, entry, progress, haveMap)
+  progressHandler(forThreadId: string, entryHash: string, entry: any, progress: number, haveMap: any) {
+    this.updateProgress(entry, progress)
+  }
+  updateProgress(entry: any, progress: number) {
+    this._clocks[entry.clock.id] = Math.max(this._clocks[entry.clock.id] || 0, entry.clock.time)
+    this.replicationProgress.done = progress
+    this.replicationProgress.target = _.values(this._clocks).reduce((x,y) => (x || 0) + (y || 0)) || null
   }
   onEntryHandler(source: 'remote' | 'self') {
     let entries: any[]
@@ -133,14 +143,27 @@ export default class Thread {
     // If the first known entry has no 'next' hashes, we've fetched the whole history
     if (entries[0].next.length === 0) {
       this.backlogReplicated = true
+      console.log("BACKLOG SYNCED")
     }
+    if (this.backlogReplicated) {
+      this.updatePosts(entries)
+    }
+  }
+  updatePosts(entries: any[]) {
     console.log("ENTRIES UPDATED", entries)
     const temp = []
     for (let entry of entries) {
       if (entry.payload.value.kind === 'Post') {
         // This post has already been processed
-        if (this._postById[entry.payload.value.id]) {
-          temp.push(this._postById[entry.payload.value.id])
+        const stalePost = this._postById[entry.hash]
+        if (stalePost !== undefined) {
+          // Add notes from other posts that came out of order
+          const notes = this._backNotes[stalePost.id]
+          if (notes !== undefined) {
+            stalePost.notes.push(...notes)
+            this._backNotes[stalePost.id] = []
+          }
+          temp.push(stalePost)
         }
         // This is a novel post, and needs to be processed
         else {
@@ -151,26 +174,31 @@ export default class Thread {
             this._postById[post.id] = post
             
             // Add notes from other posts that came out of order
-            if (this._backNotes[post.id]) {
-              post.notes.push(...this._backNotes[post.id])
+            const notes = this._backNotes[post.id]
+            if (notes !== undefined) {
+              post.notes.push(...notes)
+              this._backNotes[post.id] = []
             }
   
             const self = this
             post.notes.filter(x => x.group && x.group === 'references').forEach(x => {
+              const you = post.fromId === self._nodeInfo.id ? " (You)" : ""
               const note = {
                 id: 'referenced-by-' + post.id + "-" + Math.random(),
                 type: <'INFO'>'INFO', // Why Typescript, why?
                 group: 'referenced-by',
-                message: post.id,
+                message: post.id + you,
               }
               // The referenced post has been seen, so add the referenced-by note to it
-              if (self._postById[x.message]) {
-                self._postById[x.message].notes.push(note)
+              const referencedPost = self._postById[x.message]
+              if (referencedPost) {
+                referencedPost.notes.push(note)
               }
               // If the reference hasn't been seen, add the note to it's back notes, so we can add it when it's seen
               else {
                 if (!self._backNotes[x.message]) self._backNotes[x.message] = []
-                self._backNotes[x.message].push(note)
+                const notes = self._backNotes[x.message]
+                if (notes) notes.push(note)
               }
             })
   
@@ -205,7 +233,8 @@ export default class Thread {
     let seed = hashCode(post.id)
     let rng = new MWC(seed)
     let env = new PPE(rng, {
-      processors: this.postProcessors
+      self: this,
+      nodeId: this._nodeInfo.id,
     })
     this.postProcessors.reduce((p, pp, i) => {
       env.kv['index'] = i
@@ -213,5 +242,7 @@ export default class Thread {
     }, post)
     return post
   }
-  _pubSubHandler() {}
+  _pubSubHandler() {
+
+  }
 }

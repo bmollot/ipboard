@@ -6,7 +6,7 @@
         <button @click="toggleTest">{{testButMsg}}</button>
         <div v-if="!thread.backlogReplicated" class="thread-replicating vertical-center">
           <div class="loading-spinner"></div>
-          <span>Replicating thread history</span>
+          <span>Replicating thread history {{prettyProgress}}</span>
         </div>
       </div>
       <div class="right-controls">
@@ -53,6 +53,10 @@ export default class ThreadControl extends Vue {
     } else {
       return "null"
     }
+  }
+  get prettyProgress(): string {
+    const p = this.thread.replicationProgress
+    return `${p.done || '?'}/${p.target || '?'}`
   }
 
   joinThread(newId: string | null) {
