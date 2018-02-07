@@ -66,12 +66,14 @@ export default class ThreadView extends Vue {
     return this.$store.getters.userConfigs[this.$store.state.currentUser]
   }
 
-  post(msg: string) {
-    this.thread.post(msg, this.userConfig.data.profile)
+  post(msg: string, attachment?: File, thumbnail?: string) {
+    this.thread.post(msg, this.userConfig.data.profile, attachment, thumbnail)
   }
   replyTo(postId: string) {
-    let footer = <ThreadFooter>this.$refs.footer
-    footer.replyTo(postId)
+    let footer = this.$refs.footer
+    if (footer instanceof ThreadFooter) {
+      footer.replyTo(postId)
+    }
   }
   updateViewedThread(newThreadId: string) {
     this.thread.destroy()

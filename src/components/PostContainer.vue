@@ -12,13 +12,15 @@
       <div class="post-timestamp">{{ prettyTime }}</div>
       <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
       <br>
-      <div class="post-media-content"></div>
+      <div v-once v-if="post.attachment" class="post-media-content">
+        <img :src="previewSrc" :alt="previewAlt">
+      </div>
       <div class="post-text-content" v-html="post.text"></div>
       <div class="post-footer">
-        <div class="post-linked-from"
-          v-for="postId in linkedFrom"
-          :key="postId">
-          <a :href="'#post-' + postId">>>{{postId}}#</a>
+        <div class="post-referenced-by"
+          v-for="referencerId in referencedBy"
+          :key="referencerId">
+          <a :href="'#post-' + referencerId">>>{{referencerId}}#</a>
         </div>
       </div>
     </div>
@@ -38,12 +40,11 @@ import LocalStore from 'types/localStore'
 import ThreadConfig from 'types/threadConfig';
 
 @Component({
-  props: ['post', 'threadAddress', 'linkedFrom']
+  props: ['post', 'threadAddress']
 })
 export default class PostContainer extends Vue {
   post: Post
   threadAddress: string
-  linkedFrom: string[]
   optionsShown: boolean = false
   newPetName: string = ""
 
@@ -79,6 +80,15 @@ export default class PostContainer extends Vue {
     return this.userConfig.data.blockedNodes.includes(this.post.fromId) && this.post.fromId !== this.$store.state.ipfsInfo.id
   }
 
+  // Look at my fancy ESnext syntax. Sets, spread, filter, map, and barely readable. Perfection.
+  get referencedBy(): string[] {
+    return [...new Set<string>(
+      this.post.notes
+        .filter(x => x.group && x.group === 'referenced-by' && x.message)
+        .map(x => x.message)
+    )]
+  }
+
   get prettyFrom(): string {
     return this.post.fromId
   }
@@ -96,6 +106,21 @@ export default class PostContainer extends Vue {
   }
   get prettyTime(): string {
     return new Date(this.post.timestamp).toLocaleString() // TODO make formatting configurable
+  }
+  get previewSrc(): string {
+    const a = this.post.attachment
+    if (a && a.thumbnail) {
+      console.log("Rendering preview", a)
+      return a.thumbnail
+    }
+    return "" // TODO: Replace with placeholder based on mimetype
+  }
+  get previewAlt(): string {
+    const a = this.post.attachment
+    if (a) {
+      return a.name + ", " + a.mime
+    }
+    return "No attachment"
   }
   
   block() {
@@ -162,14 +187,26 @@ export default class PostContainer extends Vue {
 .post-id {
   display: inline;
 }
+.post-id:hover {
+  color: dodgerblue;
+}
+.post-media-content {
+  max-width: 20vw;
+  max-height: 20vh;
+  float: left;
+  margin-right: 1em;
+  margin-bottom: 1em;
+  display: flex;
+}
 .post-text-content {
  font-size: 1.2em;
  white-space: pre-wrap;
 }
 .post-footer {
+  clear: both;
   word-wrap: break-word;
 }
-.post-linked-from {
+.post-referenced-by {
   display: inline;
   font-size: 0.8em;
 }

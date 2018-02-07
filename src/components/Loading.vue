@@ -1,6 +1,6 @@
 <template>
   <div class="loading">
-    <span>Preparing IPFS...</span>
+    <span>Preparing node...</span>
   </div>
 </template>
 

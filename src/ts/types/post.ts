@@ -8,6 +8,16 @@ interface UnPost {
   timestamp: number
   text: string
   profile?: Profile
+  attachment?: PostAttachment
+}
+
+interface PostAttachment {
+  name: string
+  path?: string
+  content: string // IPFS content hash
+  thumbnail?: string // base64 inline thumbnail
+  size: number //bytes
+  mime: string
 }
 /**
  * Represents a Post that *has* been sent, and therefor has a hash/id
@@ -25,7 +35,7 @@ interface Note {
   id: string
   type: NoteType
   group?: string
-  message?: string
+  message: string
 }
 
-export {UnPost, Post}
+export {UnPost, Post, Note}

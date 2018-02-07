@@ -5,7 +5,6 @@
       :key="post.id"
       :post="post"
       :threadAddress="threadAddress"
-      :linkedFrom="links(post.id)"
       @replyTo="replyTo"
     ></post-container>
   </div>
@@ -32,6 +31,7 @@ interface PostIdToLinks {
 export default class PostList extends Vue {
   posts: Array<Post>
   threadAddress: string
+  linksTo: PostIdToLinks
 
   isScrolledToBottom: boolean = false
 
@@ -40,25 +40,6 @@ export default class PostList extends Vue {
   }
   scrollIfLocked() {
     if (this.isScrolledToBottom) this.scrollToBottom()
-  }
-
-  get linksTo(): PostIdToLinks {
-    let ret: PostIdToLinks = {}
-    this.posts.forEach(post => {
-      post.notes.forEach(note => {
-        if (note.group && note.group === 'links-to') {
-          if (note.message) {
-            let toId = note.message
-            ret[toId] = ret[toId] || new Set<string>()
-            ret[toId].add(post.id)
-          }
-        }
-      })
-    })
-    return ret
-  }
-  links(toId: string) {
-    return this.linksTo[toId]
   }
 
   replyTo(postId: string) {

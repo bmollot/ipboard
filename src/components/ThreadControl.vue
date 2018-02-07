@@ -1,12 +1,22 @@
 <template>
-  <div class="control-panel">
-      <input v-model="threadIdToJoin" placeholder="Thread ID to join">
-      <button @click="joinThread(threadIdToJoin)">JOIN</button>
-      <button @click="toggleTest">{{testButMsg}}</button>
-      <div style="float: right">
-        <span :title="threadAddress">Current thread: {{ threadId }}</span>
+  <div class="thread-panel">
+      <div class="left-controls">
+        <input v-model="threadIdToJoin" placeholder="Thread ID to join">
+        <button @click="joinThread(threadIdToJoin)">JOIN</button>
+        <button @click="toggleTest">{{testButMsg}}</button>
+        <div v-if="!thread.backlogReplicated" class="thread-replicating vertical-center">
+          <div class="loading-spinner"></div>
+          <span>Replicating thread history</span>
+        </div>
+      </div>
+      <div class="right-controls">
+        <div style="display: inline-block" class="vertical-center" :title="threadAddress">
+          Current thread: {{ threadId }}
+        </div>
         <button @click="copyAddress" title="Copy full address to clipboard">📋</button>
-        <span>Synced: [{{thread.synced.length}}]</span>
+        <div style="display: inline-block" class="vertical-center">
+          Synced: [{{thread.synced.length}}]
+        </div>
       </div>
   </div>
 </template>
@@ -73,6 +83,43 @@ export default class ThreadControl extends Vue {
 }
 </script>
 
-<style>
+<style lang="scss">
+.thread-panel {
+  display: flex;
+  justify-content: space-between;
+  background-color: #333333;
+  color: #DDDDDD;
+}
+.left-controls {
+  display: flex;
+  flex-grow: 1;
+}
+.left-controls * {
+  margin-left: 0.1em;
+}
+.right-controls {
+  display: flex;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
+.right-controls * {
+  margin-right: 0.1em;
+}
+.thread-replicating {
+  display: inline-block;
+}
+.loading-spinner {
+  display: inline-block;
+  border: 2px solid rgb(255, 255, 255);
+  border-top: 2px solid rgb(64, 239, 252);
+  border-radius: 50%;
+  width: 0.7em;
+  height: 0.7em;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>
 

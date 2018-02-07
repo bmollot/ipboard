@@ -1,8 +1,5 @@
-- File posting
-  - Image
-  - Audio
-  - Gif
-  - Video
+- Persist whole file to IPFS
+- (You)s
 
 - syncwatch
 - spoiler tags

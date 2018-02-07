@@ -1,6 +1,6 @@
 <template>
   <div class="control-panel">
-    <div class="ipfs-node-id-display">Your IPFS node ID is: <span class="hash">{{nodeId}}</span></div>
+    <div class="ipfs-node-id-display">Your node ID is: <span class="hash">{{nodeId}}</span></div>
     <div class="right-options">
       <label>User profile</label>
       <select placeholder="default" v-model="selectedUser" @change="userChange">

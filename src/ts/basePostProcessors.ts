@@ -51,9 +51,9 @@ const postLink = makePostProcessor(
       /(&gt;&gt;)([0-z]{46})(\s|$)/g,
       (match: string, prefix: string, postId: string, trailing: string): string => {
         post.notes.push({
-          id: 'links-to-' + postId,
+          id: 'references-' + postId + "-" + Math.random(),
           type: "INFO",
-          group: 'links-to',
+          group: 'references',
           message: postId,
         })
         return `<a class="post-post-link" href="#post-${postId}">${prefix + postId}#${trailing}</a>`
@@ -181,8 +181,8 @@ export {
   // the rest
   die,
   dice,
+  quoteLine, // put before other '>' parsers
   postLink,
-  quoteLine,
   // keep last
   limitLength
 }
