@@ -174,12 +174,11 @@ export default class Thread {
     }
     // Once replication has finished, ensure that only new entries are processed
     if (this.backlogReplicated) {
-      // If dirtiness exceeds allowable level, reorder posts (expensive)
-      if (this._dirtiness > ALLOWED_THREAD_DIRTINESS) {
+      // If update comes from others, recalc entire thread
+      if (source === 'remote') {
         entries = this._log.iterator({
           limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
         }).collect()
-        this._dirtiness = 0
         this.updatePosts(entries, true)
       }
       // Otherwise, just add new posts
@@ -188,18 +187,6 @@ export default class Thread {
           limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
           gte: this._latestEntryId,
         }).collect()
-        // Update latest values
-        if (source === 'remote' && entries.length > 0) {
-          this._latestEntryId = entries[entries.length - 1].hash
-          const newTimestamp = entries[entries.length - 1].payload.value.timestamp
-          if (newTimestamp) {
-            // Increase thread dirtiness counter if a post was recieved out of order
-            if (newTimestamp < this._latestPostTimestamp) {
-              this._dirtiness++
-            }
-            this._latestPostTimestamp = newTimestamp
-          }
-        }
         this.updatePosts(entries)
       }
     }
