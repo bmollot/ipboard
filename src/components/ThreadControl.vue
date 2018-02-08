@@ -2,7 +2,9 @@
   <div class="thread-panel">
       <div class="left-controls">
         <input v-model="threadIdToJoin" placeholder="Thread ID to join">
-        <button @click="joinThread(threadIdToJoin)">JOIN</button>
+        <button @click="joinThread(threadIdToJoin, last100 ? 100 : postsToShow)">JOIN</button>
+        <input type="checkbox" v-model="last100" name="last100">
+        <label for="last100">Last 100</label>
         <button @click="toggleTest">{{testButMsg}}</button>
         <div v-if="!thread.backlogReplicated" class="thread-replicating vertical-center">
           <div class="loading-spinner"></div>
@@ -35,7 +37,8 @@ import ThreadConfig from 'types/threadConfig'
 })
 export default class ThreadControl extends Vue {
   thread: Thread
-
+  last100: boolean = false
+  postsToShow: number = Infinity
   threadIdToJoin: string | null = null
   isTesting: boolean = false
   testId: number | null = null
@@ -59,13 +62,13 @@ export default class ThreadControl extends Vue {
     return `${p.done || '?'}/${p.target || '?'}`
   }
 
-  joinThread(newId: string | null) {
+  joinThread(newId: string | null, postsToShow: number) {
     if (newId === null || newId === '') {
       console.error("Cannot join a thread with null or empty id, ignoring")
     }
     else {
       console.log("Joining", newId)
-      this.$emit('changed-thread', newId)
+      this.$emit('changed-thread', newId, postsToShow)
     }
   }
   copyAddress() {

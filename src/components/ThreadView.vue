@@ -6,8 +6,9 @@
         @new-post="post"
         @changed-thread="updateViewedThread"
       ></thread-control>
-      <post-list 
+      <post-list
         :posts="posts"
+        :limit="thread.postsToShow"
         :threadAddress="thread.address"
         @replyTo="replyTo"
       ></post-list>
@@ -42,7 +43,7 @@ import UserConfig from 'types/userConfig';
   }
 })
 export default class ThreadView extends Vue {
-  thread: Thread = new Thread('welcome')
+  thread: Thread = new Thread('welcome', 100)
   threadConfig: ThreadConfig
   ready: boolean = false
 
@@ -75,9 +76,9 @@ export default class ThreadView extends Vue {
       footer.replyTo(postId)
     }
   }
-  updateViewedThread(newThreadId: string) {
+  updateViewedThread(newThreadId: string, postsToShow: number) {
     this.thread.destroy()
-    this.thread = new Thread(newThreadId)
+    this.thread = new Thread(newThreadId, postsToShow)
     this.thread.init(this.db)
   }
 }

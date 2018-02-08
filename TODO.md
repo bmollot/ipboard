@@ -1,5 +1,4 @@
 - Persist whole file to IPFS
-- (You)s
 
 - syncwatch
 - spoiler tags
@@ -9,18 +8,11 @@
 - selection rolls
 - 8ball
 
-- more effecient entry => post parsing (maybe don't recalc them every time there's a change)
-
 - nicer buttons
 - code highlighting
 
 - global user profile
 - user profile editing
-
-- Limit viewed posts to N
-  - initial
-  - pruning old posts
-  
 
 - preProcessors
 

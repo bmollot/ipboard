@@ -10,7 +10,7 @@ import * as basePostProcessors from 'ts/basePostProcessors'
 
 import * as _ from 'lodash'
 import { defaultProfile, Profile } from 'types/profile'
-import {MAX_UNPOST_SIZE_BYTES, MAX_POST_SIZE_BYTES} from 'ts/constants'
+import {MAX_UNPOST_SIZE_BYTES, MAX_POST_SIZE_BYTES, ALLOWED_THREAD_DIRTINESS} from 'ts/constants'
 
 interface String_Post {
   [id: string]: Post | undefined
@@ -30,6 +30,7 @@ export default class Thread {
     target: null,
   }
   postProcessors: PostProcessor[]
+  _postsToShow: number
   _clocks: {[id: string]: number | undefined} = {}
   _backNotes: String_Notes = {}
   _postById: String_Post = {}
@@ -40,9 +41,13 @@ export default class Thread {
   _pubsub: any
   _nodeInfo: any
   _pubSubHandlerInstance: any
+  _latestEntryId?: string
+  _latestPostTimestamp: number = 0
+  _dirtiness: number = 0
 
-  constructor(id: string, postProcessors?: PostProcessor[]) {
+  constructor(id: string, postsToShow: number, postProcessors?: PostProcessor[]) {
     this.id = id
+    this.postsToShow = postsToShow
     this.postProcessors = postProcessors || _.values(basePostProcessors)
   }
   // Must be called before the thread can be used. Needed in addition to
@@ -129,48 +134,99 @@ export default class Thread {
       console.error("Refused to send a post of size " + size + "B")
     }
   }
+  get postsToShow() {
+    return this._postsToShow
+  }
+  set postsToShow(x: number) {
+    this._postsToShow = x
+    this.updateProgress()
+  }
   progressHandler(forThreadId: string, entryHash: string, entry: any, progress: number, haveMap: any) {
     this.updateProgress(entry, progress)
   }
-  updateProgress(entry: any, progress: number) {
-    this._clocks[entry.clock.id] = Math.max(this._clocks[entry.clock.id] || 0, entry.clock.time)
-    this.replicationProgress.done = progress
-    this.replicationProgress.target = _.values(this._clocks).reduce((x,y) => (x || 0) + (y || 0)) || null
+  updateProgress(entry?: any, progress?: number) {
+    if (progress) this.replicationProgress.done = progress
+    // If we want the entire backlog, estimate how many posts that is
+    if (entry && this.postsToShow === Infinity) {
+      this._clocks[entry.clock.id] = Math.max(this._clocks[entry.clock.id] || 0, entry.clock.time)
+      this.replicationProgress.target = _.values(this._clocks).reduce((x,y) => (x || 0) + (y || 0)) || null
+    }
+    // Otherwise it's just the configured number of posts
+    else {
+      this.replicationProgress.target = this.postsToShow
+    }
   }
   onEntryHandler(source: 'remote' | 'self') {
     let entries: any[]
-    entries = this._log.iterator({limit: -1}).collect()
-    // If the first known entry has no 'next' hashes, we've fetched the whole history
-    if (entries[0].next.length === 0) {
-      this.backlogReplicated = true
-      console.log("BACKLOG SYNCED")
+    if (!this.backlogReplicated) {
+      entries = this._log.iterator({
+        limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
+      }).collect()
+      // If the first known entry has no 'next' hashes, we've fetched the whole history
+      if (entries[0].next.length === 0) {
+        this.backlogReplicated = true
+        console.log("BACKLOG SYNCED")
+      }
+      if (entries.length >= this.postsToShow) {
+        this.backlogReplicated = true
+        console.log("FETCHED ENOUGH")
+      }
     }
+    // Once replication has finished, ensure that only new entries are processed
     if (this.backlogReplicated) {
-      this.updatePosts(entries)
+      // If dirtiness exceeds allowable level, reorder posts (expensive)
+      if (this._dirtiness > ALLOWED_THREAD_DIRTINESS) {
+        entries = this._log.iterator({
+          limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
+        }).collect()
+        this._dirtiness = 0
+        this.updatePosts(entries, true)
+      }
+      // Otherwise, just add new posts
+      else {
+        entries = this._log.iterator({
+          limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
+          gte: this._latestEntryId,
+        }).collect()
+        // Update latest values
+        if (source === 'remote' && entries.length > 0) {
+          this._latestEntryId = entries[entries.length - 1].hash
+          const newTimestamp = entries[entries.length - 1].payload.value.timestamp
+          if (newTimestamp) {
+            // Increase thread dirtiness counter if a post was recieved out of order
+            if (newTimestamp < this._latestPostTimestamp) {
+              this._dirtiness++
+            }
+            this._latestPostTimestamp = newTimestamp
+          }
+        }
+        this.updatePosts(entries)
+      }
     }
   }
-  updatePosts(entries: any[]) {
+  updatePosts(entries: any[], purge = false) {
+    const temp: Post[] = []
     console.log("ENTRIES UPDATED", entries)
-    const temp = []
     for (let entry of entries) {
       if (entry.payload.value.kind === 'Post') {
+
         // This post has already been processed
-        const stalePost = this._postById[entry.hash]
-        if (stalePost !== undefined) {
+        let post: Post = <Post>this._postById[entry.hash]
+        if (post !== undefined) {
           // Add notes from other posts that came out of order
-          const notes = this._backNotes[stalePost.id]
+          const notes = this._backNotes[post.id]
           if (notes !== undefined) {
-            stalePost.notes.push(...notes)
-            this._backNotes[stalePost.id] = []
+            post.notes.push(...notes)
+            this._backNotes[post.id] = []
           }
-          temp.push(stalePost)
         }
         // This is a novel post, and needs to be processed
         else {
+          // this.updateProgress(entry, (this.replicationProgress.done || 0) + 1)
           // Note that size is calculated before processing the post. The restriction is for transit size
           const size = JSON.stringify(entry.payload.value).length * 2 // rough strlen to bytes conversion
           if (size <= MAX_POST_SIZE_BYTES) {
-            const post = this.entryToPost(entry)
+            post = this.entryToPost(entry)
             this._postById[post.id] = post
             
             // Add notes from other posts that came out of order
@@ -201,15 +257,41 @@ export default class Thread {
                 if (notes) notes.push(note)
               }
             })
-  
-            temp.push(post)
+            if (!purge) {
+              this.posts.push(post)
+            }
           } else {
             console.log("Refusing to parse and display recieved post of size " + size + "B", entry)
           }
         }
+        if (purge) {
+          temp.push(post)
+        }
       }
     }
-    this.posts = temp
+    if (purge) {
+      this.posts = temp
+    }
+    // Limit posts to latest N, where N = postsToShow
+    const start = this.posts.length - this.postsToShow
+    if (start > 0) {
+      this.posts = this.posts.slice(start)
+    }
+    this.pruneUnusedPosts()
+  }
+  async pruneUnusedPosts() {
+    const self = this
+    return new Promise(resolve => {
+      const unusedIds: Set<string> = new Set(Object.keys(self._postById))
+      self.posts.forEach(post => {
+        unusedIds.delete(post.id)
+      })
+      // Purge posts that aren't being displayed
+      unusedIds.forEach(id => {
+        delete self._postById[id]
+      })
+    })
+    
   }
   async destroy() {
     this._pubsub.unsubscribe(this.address, this._pubSubHandlerInstance)

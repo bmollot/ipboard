@@ -5,3 +5,4 @@ export const MAX_POST_SIZE_BYTES = 1000000 // 1MiB
 export const MAX_RAND_RANGE = 1000000000 // one billion
 export const MAX_RAND_OPS = 10000 // ten thousand
 export const MAX_THUMBNAIL_DIM = 128
+export const ALLOWED_THREAD_DIRTINESS = 10 // number of out of order messages

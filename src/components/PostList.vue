@@ -1,7 +1,7 @@
 <template>
   <div class="post-list">
     <post-container
-      v-for="post in posts"
+      v-for="post in limitedPosts"
       :key="post.id"
       :post="post"
       :threadAddress="threadAddress"
@@ -23,13 +23,14 @@ interface PostIdToLinks {
 }
 
 @Component({
-  props: ['posts', 'threadAddress'],
+  props: ['posts', 'limit', 'threadAddress'],
   components: {
     'post-container': PostContainer
   }
 })
 export default class PostList extends Vue {
   posts: Array<Post>
+  limit: number
   threadAddress: string
   linksTo: PostIdToLinks
 
@@ -44,6 +45,16 @@ export default class PostList extends Vue {
 
   replyTo(postId: string) {
     this.$emit('replyTo', postId)
+  }
+
+  get limitedPosts() {
+    const start = this.posts.length - this.limit
+    if (start > 0) {
+      return this.posts.slice(start)
+    }
+    else {
+      return this.posts
+    }
   }
 
   mounted() {

@@ -9,7 +9,7 @@
       </select>
       <button @click="showAddUserPanel">NEW</button>
     </div>
-    <hr style="clear: both">
+    <hr class="control-separater">
     <div v-if="addUserPanelShown" class="add-user-panel">
       <div class="right-options">
         <input type="text" v-model="newUser">
@@ -69,5 +69,9 @@ export default class ControlPanel extends Vue {
 }
 .right-options {
   float: right;
+}
+.control-separater {
+  clear: both;
+  margin: 0;
 }
 </style>
