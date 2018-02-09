@@ -38,4 +38,4 @@ interface Note {
   message: string
 }
 
-export {UnPost, Post, Note}
+export {UnPost, Post, Note, PostAttachment}

@@ -12,8 +12,13 @@
       <div class="post-timestamp">{{ prettyTime }}</div>
       <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
       <br>
-      <div v-once v-if="post.attachment" class="post-media-content">
-        <img :src="previewSrc" :alt="previewAlt">
+      <div v-if="post.attachment" class="post-media-content" @click="toggleMediaExpanded">
+        <div v-if="mediaExpanded">
+          <img :src="fullSrc" :alt="previewAlt">
+        </div>
+        <div v-else class="post-thumbnail-container">
+          <img :src="previewSrc" :alt="previewAlt">
+        </div>
       </div>
       <div class="post-text-content" v-html="post.text"></div>
       <div class="post-footer">
@@ -47,6 +52,11 @@ export default class PostContainer extends Vue {
   threadAddress: string
   optionsShown: boolean = false
   newPetName: string = ""
+  mediaExpanded: boolean = false
+
+  toggleMediaExpanded() {
+    this.mediaExpanded = !this.mediaExpanded
+  }
 
   get userConfigs(): any {
     return this.$store.getters.userConfigs
@@ -106,6 +116,16 @@ export default class PostContainer extends Vue {
   }
   get prettyTime(): string {
     return new Date(this.post.timestamp).toLocaleString() // TODO make formatting configurable
+  }
+  // TODO: Use local node, rather than public gateway
+  get fullSrc(): string {
+    const a = this.post.attachment
+    if (a) {
+      return 'https://ipfs.io/ipfs/' + a.content
+    }
+    else {
+      return ''
+    }
   }
   get previewSrc(): string {
     const a = this.post.attachment
@@ -191,12 +211,21 @@ export default class PostContainer extends Vue {
   color: dodgerblue;
 }
 .post-media-content {
-  max-width: 20vw;
-  max-height: 20vh;
   float: left;
   margin-right: 1em;
   margin-bottom: 1em;
   display: flex;
+}
+.post-media-content div {
+  display: flex;
+  flex-grow: 1;
+}
+.post-media-content div * {
+  flex-grow: 1;
+}
+.post-thumbnail-container {
+  max-width: 20vw;
+  max-height: 20vh;
 }
 .post-text-content {
  font-size: 1.2em;

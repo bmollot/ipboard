@@ -4,7 +4,6 @@
       <div class="upload-container">
         <div class="upload-preview-container">
           <canvas
-            v-once
             class="upload-preview"
             ref="canvas"
             :width="previewWidth"
@@ -12,6 +11,7 @@
           ></canvas>
         </div>
         <input ref="filein" type="file" @change="uploadAttachment">
+        <div class="upload-ready">{{prettyUploadReady}}</div>
       </div>
       <textarea
         ref="textarea"
@@ -39,17 +39,55 @@ import PostList from 'comp/PostList.vue'
 
 import {MAX_THUMBNAIL_DIM} from 'ts/constants'
 
-@Component
+@Component({
+  props: ['uploadStatus']
+})
 export default class ThreadFooter extends Vue {
+  uploadStatus: {
+    uploading: File | null
+    done: boolean
+    results: {
+      path: string,
+      hash: string,
+      size: number // bytes
+    } | null
+  }
+
   composing: boolean = false
   textToPost: string = ""
   thumbnailDataUrl?: string = undefined
   attachedFile?: File = undefined
   previewWidth = MAX_THUMBNAIL_DIM
   previewHeight = MAX_THUMBNAIL_DIM
+
+  get prettyUploadReady(): string {
+    if (this.attachedFile !== undefined) {
+      return this.uploadStatus.done ? 'DONE' : 'UPLOADING'
+    }
+    else {
+      return 'No file selected'
+    }
+  }
   
   postClicked() {
-    this.$emit('new-post', this.textToPost, this.attachedFile, this.thumbnailDataUrl)
+    // If we have a file that's done uploading, include relevant info in the post event
+    const res = this.uploadStatus.results
+    if (this.attachedFile && this.attachedFile === this.uploadStatus.uploading && this.uploadStatus.done && res) {
+      this.$emit('new-post', this.textToPost, {
+        name: this.attachedFile.name,
+        mime: this.attachedFile.type,
+        path: res.path,
+        content: res.hash,
+        size: res.size,
+        thumbnail: this.thumbnailDataUrl
+      })
+    }
+    // Otherwise exclude it, making a text-only post
+    else {
+      this.$emit('new-post', this.textToPost)
+    }
+
+    // In any case, perfrom cleanup so the next post will be fresh
     this.textToPost = ""
     this.thumbnailDataUrl = undefined
     this.attachedFile = undefined
@@ -57,6 +95,7 @@ export default class ThreadFooter extends Vue {
     if (input instanceof HTMLInputElement) {
       input.value = ""
     }
+    this.clearAttachment()
     this.composing = false
   }
   toComposeMode() {
@@ -143,6 +182,8 @@ export default class ThreadFooter extends Vue {
             }
           }
         }
+        // Persist file to IPFS
+        this.$emit('upload-file', f)
       }
     }
   }
@@ -166,7 +207,6 @@ export default class ThreadFooter extends Vue {
 }
 .upload-preview-container {
   flex-grow: 1;
-  // display: flex;
 }
 .upload-preview-container * {
   margin-left: auto;

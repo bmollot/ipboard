@@ -12,7 +12,12 @@
         :threadAddress="thread.address"
         @replyTo="replyTo"
       ></post-list>
-      <thread-footer @new-post="post" ref="footer"></thread-footer>
+      <thread-footer
+        @new-post="post"
+        @upload-file="uploadFile"
+        :uploadStatus="uploadStatus"
+        ref="footer"
+      ></thread-footer>
     </div>
     <div v-else>
       <div class="centered">
@@ -34,6 +39,7 @@ import Thread from 'types/thread'
 import ThreadConfig from 'types/threadConfig'
 import LocalStore from 'types/localStore';
 import UserConfig from 'types/userConfig';
+import {PostAttachment} from 'types/post'
 
 @Component({
   components: {
@@ -46,6 +52,20 @@ export default class ThreadView extends Vue {
   thread: Thread = new Thread('welcome', 100)
   threadConfig: ThreadConfig
   ready: boolean = false
+
+  uploadStatus: {
+    uploading: File | null
+    done: boolean
+    results: {
+      path: string,
+      hash: string,
+      size: number // bytes
+    } | null
+  } = {
+    uploading: null,
+    done: false,
+    results: null,
+  }
 
   created() {
     const self = this
@@ -67,8 +87,8 @@ export default class ThreadView extends Vue {
     return this.$store.getters.userConfigs[this.$store.state.currentUser]
   }
 
-  post(msg: string, attachment?: File, thumbnail?: string) {
-    this.thread.post(msg, this.userConfig.data.profile, attachment, thumbnail)
+  post(msg: string, attachment?: PostAttachment) {
+    this.thread.post(msg, this.userConfig.data.profile, attachment)
   }
   replyTo(postId: string) {
     let footer = this.$refs.footer
@@ -80,6 +100,27 @@ export default class ThreadView extends Vue {
     this.thread.destroy()
     this.thread = new Thread(newThreadId, postsToShow)
     this.thread.init(this.db)
+  }
+  uploadFile(file: File) {
+    this.uploadStatus = {
+      uploading: file,
+      done: false,
+      results: null,
+    }
+
+    const self = this
+    const fr = new FileReader()
+    fr.readAsArrayBuffer(file)
+    fr.onloadend = async () => {
+      const ab: ArrayBuffer = fr.result
+      const buf = Buffer.from(ab)
+      console.log("Loaded file", ab, buf)
+      const node = this.$store.state.ipfsNode
+      const res = await node.files.add(buf)
+      console.log("Added file", res)
+      self.uploadStatus.results = res[0]
+      self.uploadStatus.done = true
+    }
   }
 }
 </script>

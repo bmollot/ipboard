@@ -1,4 +1,6 @@
-- Persist whole file to IPFS
+- Use local IPFS node to retrieve post attachments (currently using ipfs.io)
+
+- Timeout attempt to replicate thread if no entries are recieved
 
 - syncwatch
 - spoiler tags
@@ -10,15 +12,12 @@
 
 - nicer buttons
 - code highlighting
-
 - global user profile
 - user profile editing
-
 - preProcessors
-
 - img2text
 
-- Optionally use IPFS gateway rather than js-ipfs
+- Optionally use IPFS gateway rather than js-ipfs (Roadblocked due to OrbitDB incompatibility)
 - Port client
   - CLI
   - Election
@@ -26,7 +25,6 @@
 
 
 - Styling - themes?
-- File uploading
 
 - OrbitDB type bindings
 - IPFS type bindings

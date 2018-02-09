@@ -4,7 +4,7 @@ import escapeHtml from 'utils/escapeHtml'
 
 import {PostProcessor} from 'types/postProcessor'
 import PPE from 'types/postProcessorEnvironment'
-import {UnPost, Post, Note} from 'types/post'
+import {UnPost, Post, Note, PostAttachment} from 'types/post'
 
 import * as basePostProcessors from 'ts/basePostProcessors'
 
@@ -104,27 +104,15 @@ export default class Thread {
     // Optional extra await
     return this._log.load() // This just boosts perf when complete, no need to wait
   }
-  post(msg: string, profile?: Profile, file?: File, thumb?: string) {
+  post(text: string, profile?: Profile, attachment?: PostAttachment) {
     let post: UnPost = {
       kind: "Post",
       timestamp: Date.now(),
-      text: msg,
+      text,
       profile,
-      attachment: undefined,
+      attachment,
     }
-    if (file) {
-      post.attachment = {
-        name: file.name,
-        size: file.size,
-        mime: file.type,
-        content: "",
-        thumbnail: thumb,
-      }
-      this._add(post)
-    }
-    else {
-      this._add(post)
-    }
+    this._add(post)
   }
   _add(payload: Object) {
     const size = JSON.stringify(payload).length * 2 // approximation of byte size of string
