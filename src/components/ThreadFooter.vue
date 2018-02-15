@@ -1,6 +1,17 @@
 <template>
   <div class="thread-footer">
     <div class="compose-post-area" v-if="composing">
+      <textarea
+        ref="textarea"
+        cols="60" rows="10"
+        v-model="textToPost"
+        resize="none"
+      ></textarea>
+      <div class="compose-action-container">
+        <button @click="postClicked">SUBMIT</button>
+        <button @click="cancelCompose">CANCEL</button>
+        <button @click="clearComposed">CLEAR</button>
+      </div>
       <div class="upload-container">
         <div class="upload-preview-container">
           <canvas
@@ -12,17 +23,6 @@
         </div>
         <input ref="filein" type="file" @change="uploadAttachment">
         <div class="upload-ready">{{prettyUploadReady}}</div>
-      </div>
-      <textarea
-        ref="textarea"
-        cols="60" rows="10"
-        v-model="textToPost"
-        resize="none"
-      ></textarea>
-      <div class="compose-action-container">
-        <button @click="postClicked">SUBMIT</button>
-        <button @click="cancelCompose">CANCEL</button>
-        <button @click="clearComposed">CLEAR</button>
       </div>
     </div>
     <div v-else>

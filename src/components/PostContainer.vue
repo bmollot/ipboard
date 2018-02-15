@@ -6,28 +6,50 @@
       <button @click="hide">❌</button>
       <button @click="block">🔇</button>
     </div>
-    <div class="post-body" v-if="!(hidden || blocked)">
-      <div class="post-nickname" :title="prettyFrom" @dblclick="showOptions">{{ prettyNick }}</div>
-      <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
-      <div class="post-timestamp">{{ prettyTime }}</div>
-      <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
-      <br>
-      <div v-if="post.attachment" class="post-media-content" @click="toggleMediaExpanded">
-        <div v-if="mediaExpanded">
-          <img :src="fullSrc" :alt="previewAlt">
-        </div>
-        <div v-else class="post-thumbnail-container">
-          <img :src="previewSrc" :alt="previewAlt">
-        </div>
+    <div class="post" v-if="!(hidden || blocked)">
+      <div class="post-header">
+        <div class="post-nickname" :title="prettyFrom" @dblclick="showOptions">{{ prettyNick }}</div>
+        <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
+        <div class="post-timestamp">{{ prettyTime }}</div>
+        <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
       </div>
-      <div class="post-text-content" v-html="post.text"></div>
+      <div v-if="post.attachment" class="post-media-info">
+        <span>{{post.attachment.name}}</span><span>{{post.attachment.size}}</span>
+      </div>
+      <div class="post-body">
+        <div v-if="post.attachment" class="post-media-content">
+
+          <div v-if="attachmentType === 'IMAGE'">
+            <div v-if="mediaExpanded && !fetchingAttachment" @click="toggleMediaExpanded">
+              <img :src="fullSrc" :alt="attachmentAlt">
+            </div>
+            <div v-else class="post-thumbnail-container" @click="toggleMediaExpanded">
+              <img :src="previewSrc" :alt="attachmentAlt" width="128">
+            </div>
+          </div>
+
+          <div v-else>
+            <div v-if="mediaExpanded && !fetchingAttachment">
+              <a :href="fullSrc" :download="post.attachment.name">
+                <img :src="otherFilePreview" :alt="attachmentAlt">
+              </a>
+            </div>
+            <div v-else @click="toggleMediaExpanded">
+              <img :src="otherFilePreview" :alt="attachmentAlt">
+            </div>
+          </div>
+          
+          <div v-if="fetchingAttachment" style="flex-shrink='1'">Downloading...</div>
+        </div>
+        <div class="post-text-content" v-html="post.text"></div>
+      </div>
       <div class="post-footer">
-        <div class="post-referenced-by"
-          v-for="referencerId in referencedBy"
-          :key="referencerId">
-          <a :href="'#post-' + referencerId">>>{{referencerId}}#</a>
+          <div class="post-referenced-by"
+            v-for="referencerId in referencedBy"
+            :key="referencerId">
+            <a :href="'#post-' + referencerId">>>{{referencerId}}#</a>
+          </div>
         </div>
-      </div>
     </div>
     <div v-else-if="!blocked" class="post-hidden">
       <button @click="unhide">➕</button>
@@ -42,7 +64,9 @@ import Component from 'vue-class-component'
 import {Post} from 'types/post'
 import UserConfig from 'types/userConfig'
 import LocalStore from 'types/localStore'
-import ThreadConfig from 'types/threadConfig';
+import ThreadConfig from 'types/threadConfig'
+
+import FilePng from 'res/img/file.png'
 
 @Component({
   props: ['post', 'threadAddress']
@@ -53,8 +77,31 @@ export default class PostContainer extends Vue {
   optionsShown: boolean = false
   newPetName: string = ""
   mediaExpanded: boolean = false
+  fullSrc: string = ""
+  _fileBlob: Blob | null = null
+  fetchingAttachment = false
+  attachmentType: 'NONE' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'OTHER' = 'NONE'
+  otherFilePreview = FilePng
+
+  created() {
+    const a = this.post.attachment
+    if (a) {
+      if (a.mime.startsWith('image')) {
+        this.attachmentType = 'IMAGE'
+      } else if (a.mime.startsWith('video')) {
+        this.attachmentType = 'VIDEO'
+      } else if (a.mime.startsWith('audio')) {
+        this.attachmentType = 'AUDIO'
+      } else {
+        this.attachmentType = 'OTHER'
+      }
+    } else {
+      this.attachmentType = 'NONE'
+    }
+  }
 
   toggleMediaExpanded() {
+    this.updateFullSrc()
     this.mediaExpanded = !this.mediaExpanded
   }
 
@@ -117,14 +164,31 @@ export default class PostContainer extends Vue {
   get prettyTime(): string {
     return new Date(this.post.timestamp).toLocaleString() // TODO make formatting configurable
   }
-  // TODO: Use local node, rather than public gateway
-  get fullSrc(): string {
+
+  updateFullSrc() {
+    if (this.fetchingAttachment) return; // Do nothing if a fetch is in progress
+    console.log("updateFullSrc called", this.fullSrc, this._fileBlob)
     const a = this.post.attachment
+    // Only return a src uri if the post *has* an attachment
     if (a) {
-      return 'https://ipfs.io/ipfs/' + a.content
-    }
-    else {
-      return ''
+      // Only fetch if data uri is missing
+      if (!this.fullSrc || this.fullSrc === '') {
+        this.fetchingAttachment = true
+        // Get full file from IPFS and set dataUri for future reference
+        const self = this
+        this.$store.state.ipfsNode.files.get(a.content, (err: Error | undefined, files: {path: string, content: Buffer}[]) => {
+          console.log("Got file!", files)
+          if (err) {
+            console.error("Failed to get file for ",self, err)
+            return
+          }
+          // Store downloaded data as a Blob on this component (will be cleaned by GC when this component is pruned)
+          self._fileBlob = new Blob(files.map(x => x.content.buffer), {type: a.mime})
+          // Get a uri to this in-memory blob to use as img src.
+          self.fullSrc = URL.createObjectURL(self._fileBlob)
+          self.fetchingAttachment = false
+        })
+      }
     }
   }
   get previewSrc(): string {
@@ -135,7 +199,7 @@ export default class PostContainer extends Vue {
     }
     return "" // TODO: Replace with placeholder based on mimetype
   }
-  get previewAlt(): string {
+  get attachmentAlt(): string {
     const a = this.post.attachment
     if (a) {
       return a.name + ", " + a.mime
@@ -193,6 +257,14 @@ export default class PostContainer extends Vue {
   max-width: calc(100vw - 1.4em);
   border: 1px solid black;
 }
+.post {
+  display: flex;
+  flex-direction: column;
+}
+.post-header {
+  display: flex;
+  flex-direction: row;
+}
 .post-nickname {
   display: inline;
   font-weight: bold;
@@ -210,15 +282,23 @@ export default class PostContainer extends Vue {
 .post-id:hover {
   color: dodgerblue;
 }
+.post-body {
+  display: flex;
+  flex-flow: wrap;
+}
 .post-media-content {
-  float: left;
   margin-right: 1em;
   margin-bottom: 1em;
+  max-width: fit-content;
+  max-height: fit-content;
   display: flex;
+  flex-direction: column;
 }
 .post-media-content div {
   display: flex;
   flex-grow: 1;
+  max-width: 100%;
+  max-height: 100%;
 }
 .post-media-content div * {
   flex-grow: 1;

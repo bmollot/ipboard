@@ -1,5 +1,5 @@
-- Use local IPFS node to retrieve post attachments (currently using ipfs.io)
-
+- Locked to bottom indicator
+- Better way to open post options
 - Timeout attempt to replicate thread if no entries are recieved
 
 - syncwatch
