@@ -10,7 +10,12 @@ import * as basePostProcessors from 'ts/basePostProcessors'
 
 import * as _ from 'lodash'
 import { defaultProfile, Profile } from 'types/profile'
-import {MAX_UNPOST_SIZE_BYTES, MAX_POST_SIZE_BYTES, ALLOWED_THREAD_DIRTINESS} from 'ts/constants'
+import {
+  MAX_UNPOST_SIZE_BYTES,
+  MAX_POST_SIZE_BYTES,
+  ALLOWED_THREAD_DIRTINESS,
+  THREAD_CONNECTION_TIMEOUT
+} from 'ts/constants'
 
 interface String_Post {
   [id: string]: Post | undefined
@@ -30,14 +35,16 @@ export default class Thread {
     target: null,
   }
   postProcessors: PostProcessor[]
-  _postsToShow: number
+  initTime = 0
+  isEmpty = false
+  _postsToShow: number = Infinity
   _clocks: {[id: string]: number | undefined} = {}
   _backNotes: String_Notes = {}
   _postById: String_Post = {}
   _haveNeededPosts: boolean = false
   _timeUntilDesynced = 10000 // milliseconds
   _log: any
-  _syncedHandle: number
+  _syncedHandle: number | undefined
   _pubsub: any
   _nodeInfo: any
   _pubSubHandlerInstance: any
@@ -62,6 +69,7 @@ export default class Thread {
     log.events.on('replicate.progress', this.progressHandler.bind(this))
     this._pubSubHandlerInstance = this._pubSubHandler.bind(this)
     this._pubsub.subscribe(this.address, this._pubSubHandlerInstance)
+    this.initTime = Date.now()
   }
   async _initOther(db: any) {
     const self = this
@@ -79,6 +87,9 @@ export default class Thread {
       self._syncedHandle = window.setTimeout(syncFunction, self._timeUntilDesynced)
     }
     this._syncedHandle = window.setTimeout(syncFunction, self._timeUntilDesynced)
+    window.setTimeout(() => {
+      self.isEmpty = self.posts.length === 0 && (self.replicationProgress.done === null)
+    }, THREAD_CONNECTION_TIMEOUT)
   }
   /**
    * Must be called before the thread can be used. Needed in addition to
@@ -145,6 +156,7 @@ export default class Thread {
     }
   }
   onEntryHandler(source: 'remote' | 'self') {
+    this.isEmpty = false
     let entries: any[]
     if (!this.backlogReplicated) {
       entries = this._log.iterator({

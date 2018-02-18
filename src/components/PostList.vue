@@ -1,14 +1,12 @@
 <template>
-  <div class="post-list-container">
-    <div class="post-list" ref="list">
-      <post-container
-        v-for="post in limitedPosts"
-        :key="post.id"
-        :post="post"
-        :threadAddress="threadAddress"
-        @replyTo="replyTo"
-      ></post-container>
-    </div>
+  <div class="post-list" ref="list">
+    <post-container
+      v-for="post in limitedPosts"
+      :key="post.id"
+      :post="post"
+      :threadAddress="threadAddress"
+      @replyTo="replyTo"
+    ></post-container>
     <div v-if="isScrolledToBottom" class="post-list-anchored">Locked</div>
   </div>
 </template>
@@ -81,11 +79,6 @@ export default class PostList extends Vue {
 </script>
 
 <style lang="scss">
-.post-list-container {
-  flex-grow: 1;
-  display: flex;
-  position: relative;
-}
 .post-list {
   flex-basis: 0;
   flex-grow: 1;

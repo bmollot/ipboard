@@ -6,9 +6,12 @@
         <input type="checkbox" v-model="last100" name="last100">
         <label for="last100">Last 100</label>
         <button @click="toggleTest">{{testButMsg}}</button>
-        <div v-if="!thread.backlogReplicated" class="thread-replicating vertical-center">
+        <div v-if="!thread.backlogReplicated && !thread.isEmpty" class="thread-replicating vertical-center">
           <div class="loading-spinner"></div>
           <span>Replicating thread history {{prettyProgress}}</span>
+        </div>
+        <div v-else-if="thread.isEmpty" class="vertical-center">
+          <span>Thread seems to be empty. Be the first poster.</span>
         </div>
       </div>
       <div class="right-controls">
