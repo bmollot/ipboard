@@ -1,12 +1,15 @@
 <template>
-  <div class="post-list">
-    <post-container
-      v-for="post in limitedPosts"
-      :key="post.id"
-      :post="post"
-      :threadAddress="threadAddress"
-      @replyTo="replyTo"
-    ></post-container>
+  <div class="post-list-container">
+    <div class="post-list" ref="list">
+      <post-container
+        v-for="post in limitedPosts"
+        :key="post.id"
+        :post="post"
+        :threadAddress="threadAddress"
+        @replyTo="replyTo"
+      ></post-container>
+    </div>
+    <div v-if="isScrolledToBottom" class="post-list-anchored">Locked</div>
   </div>
 </template>
 
@@ -37,7 +40,9 @@ export default class PostList extends Vue {
   isScrolledToBottom: boolean = false
 
   scrollToBottom() {
-    this.$el.scrollTop = this.$el.scrollHeight
+    const list = this.$refs.list
+    if (list instanceof Element)
+      list.scrollTop = list.scrollHeight
   }
   scrollIfLocked() {
     if (this.isScrolledToBottom) this.scrollToBottom()
@@ -58,25 +63,38 @@ export default class PostList extends Vue {
   }
 
   mounted() {
-    let that = this
-    this.$el.addEventListener('scroll', ev => {
-      let el = (<Element> ev.target)
-      that.isScrolledToBottom = el.scrollHeight - el.scrollTop === el.clientHeight
-    })
+    const self = this
+    const list = this.$refs.list
+    if (list instanceof Element)
+      list.addEventListener('scroll', ev => {
+        let el = (<Element> ev.target)
+        self.isScrolledToBottom = el.scrollHeight - el.scrollTop === el.clientHeight
+      })
   }
   updated() {
-    let that = this
+    const self = this
     this.$nextTick(() => {
-      that.scrollIfLocked()
+      self.scrollIfLocked()
     })
   }
 }
 </script>
 
-<style lang="sass">
-.post-list
-  flex-basis: 0
-  flex-grow: 1
-  overflow: auto
+<style lang="scss">
+.post-list-container {
+  flex-grow: 1;
+  display: flex;
+  position: relative;
+}
+.post-list {
+  flex-basis: 0;
+  flex-grow: 1;
+  overflow: auto;
+}
+.post-list-anchored {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
 </style>
 

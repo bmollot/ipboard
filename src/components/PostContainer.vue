@@ -2,16 +2,23 @@
   <div :id="'post-' + post.id" class="post-container" v-if="!blocked">
     <div v-if="optionsShown" class="post-options">
       <input type="text" v-model="newPetName" ref="petNameInput">
-      <button class="post-options-save" @click="saveOptions">SAVE</button>
-      <button @click="hide">❌</button>
-      <button @click="block">🔇</button>
+      <button @click="hide">HIDE</button>
+      <button @click="block">BLOCK</button>
+      <div class="post-options-right">
+        <button class="post-options-save" @click="saveOptions">SAVE</button>
+        <button class="post-options-close" @click="hideOptions">CLOSE</button>
+      </div>
     </div>
     <div class="post" v-if="!(hidden || blocked)">
       <div class="post-header">
-        <div class="post-nickname" :title="prettyFrom" @dblclick="showOptions">{{ prettyNick }}</div>
+        <div class="post-nickname" :title="prettyFrom">{{ prettyNick }}</div>
         <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
         <div class="post-timestamp">{{ prettyTime }}</div>
         <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
+        <div class="post-options-toggle">
+          <span v-if="optionsShown" @click="hideOptions">▲</span>
+          <span v-else @click="showOptions">▼</span>
+        </div>
       </div>
       <div v-if="post.attachment" class="post-media-info">
         <span>{{post.attachment.name}}</span><span>{{post.attachment.size}}</span>
@@ -23,7 +30,9 @@
             <div v-if="mediaExpanded && !fetchingAttachment" @click="toggleMediaExpanded">
               <img :src="fullSrc" :alt="attachmentAlt">
             </div>
-            <div v-else class="post-thumbnail-container" @click="toggleMediaExpanded">
+            <div v-else class="post-thumbnail-container"
+              @click="toggleMediaExpanded"
+              :style="fetchingAttachment ? 'cursor: progress' : ''">
               <img :src="previewSrc" :alt="attachmentAlt" width="128">
             </div>
           </div>
@@ -34,7 +43,9 @@
                 <img :src="otherFilePreview" :alt="attachmentAlt">
               </a>
             </div>
-            <div v-else @click="toggleMediaExpanded">
+            <div v-else
+              @click="toggleMediaExpanded"
+              :style="'cursor: ' + (fetchingAttachment ? 'progress' : 'pointer')">
               <img :src="otherFilePreview" :alt="attachmentAlt">
             </div>
           </div>
@@ -239,11 +250,13 @@ export default class PostContainer extends Vue {
       }
     })
   }
+  hideOptions() {
+    this.newPetName = ""
+    this.optionsShown = false
+  }
   saveOptions() {
     Vue.set(this.petNames, this.fromId, this.newPetName)
     this.userConfig.save()
-    this.newPetName = ""
-    this.optionsShown = false
   }
 }
 </script>
@@ -261,26 +274,36 @@ export default class PostContainer extends Vue {
   display: flex;
   flex-direction: column;
 }
+.post-options {
+  display: flex;
+}
+.post-options-right {
+  float: right;
+}
+.post-options-toggle:hover {
+  color: #666666;
+  cursor: pointer;
+}
 .post-header {
   display: flex;
   flex-direction: row;
 }
-.post-nickname {
+.post-header div {
   display: inline;
+  margin-right: 0.3em;
+}
+.post-nickname {
   font-weight: bold;
 }
 .post-petname {
-  display: inline;
   font-weight: 600;
 }
-.post-timestamp {
-  display: inline;
-}
 .post-id {
-  display: inline;
+  color: #0d56b4;
 }
 .post-id:hover {
-  color: dodgerblue;
+  color: #0e3870;
+  cursor: pointer;
 }
 .post-body {
   display: flex;
@@ -293,6 +316,7 @@ export default class PostContainer extends Vue {
   max-height: fit-content;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 .post-media-content div {
   display: flex;

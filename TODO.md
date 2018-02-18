@@ -1,6 +1,8 @@
-- Locked to bottom indicator
-- Better way to open post options
 - Timeout attempt to replicate thread if no entries are recieved
+- IPFS download progress indicator
+- Indication of whether a given post's attachment has been downloaded
+- DL link in mediainfo (make file name a hyperlink)
+- Autodownload files under some size/of some mimetype?
 
 - syncwatch
 - spoiler tags
