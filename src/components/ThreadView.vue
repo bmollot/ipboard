@@ -74,6 +74,46 @@ export default class ThreadView extends Vue {
       await self.$store.dispatch('addThreadConfig', self.threadConfig)
       self.ready = true
     })
+    
+  }
+
+  mounted() {
+    const self = this
+    document.addEventListener("keypress", ev => {
+      if (!(document.activeElement instanceof HTMLInputElement
+            || document.activeElement instanceof HTMLTextAreaElement)) {
+        if (ev.key === 'a') {
+          const footer = <ThreadFooter> self.$refs.footer
+          if (!footer.composing) {
+            footer.toComposeMode()
+            ev.preventDefault()
+          }
+        }
+        if (ev.key === 'r') {
+          const footer = <ThreadFooter> self.$refs.footer
+          const posts = self.thread.posts
+          if (!footer.composing) {
+            if (posts.length > 0) {
+              footer.replyTo(posts[posts.length - 1].id)
+            }
+            else {
+              footer.toComposeMode()
+            }
+            ev.preventDefault()
+          }
+        }
+        if (ev.key === 'u') {
+          const footer = <ThreadFooter> self.$refs.footer
+          footer.toComposeMode(() => {
+            const filein = footer.$refs.filein
+            if (filein instanceof HTMLInputElement) {
+              filein.click()
+            }
+          })
+          ev.preventDefault()
+        }
+      }
+    })
   }
 
   get db() {

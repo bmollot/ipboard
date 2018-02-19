@@ -61,7 +61,7 @@ export default class ThreadFooter extends Vue {
   previewHeight = MAX_THUMBNAIL_DIM
 
   get prettyUploadReady(): string {
-    if (this.attachedFile !== undefined) {
+    if (this.uploadStatus.uploading !== null && this.uploadStatus.uploading === this.attachedFile) {
       return this.uploadStatus.done ? 'DONE' : 'UPLOADING'
     }
     else {
@@ -98,7 +98,7 @@ export default class ThreadFooter extends Vue {
     this.clearAttachment()
     this.composing = false
   }
-  toComposeMode() {
+  toComposeMode(action?: () => void) {
     this.composing = true
     // Force an update for PostList... for some reason. Likely has to do with scrolling.
     this.$parent.$children.forEach(x => {
@@ -107,12 +107,13 @@ export default class ThreadFooter extends Vue {
       }
     })
     // Focuse the textarea next tick, as it's not rendered yet
-    let that = this
+    let self = this
     this.$nextTick().then(() => {
-      let ta = that.$refs.textarea
+      let ta = self.$refs.textarea
       if (ta instanceof HTMLElement) {
         ta.focus()
       }
+      if (action && typeof action === 'function') action()
     })
   }
   cancelCompose() {
@@ -123,16 +124,15 @@ export default class ThreadFooter extends Vue {
   }
 
   replyTo(postId: string) {
+    this.textToPost += `>>${postId}\n`
     if (!this.composing) {
       this.toComposeMode()
-      this.textToPost += `>>${postId}\n`
     }
     else {
       let ta = this.$refs.textarea
       if (ta instanceof HTMLElement) {
         ta.focus()
       }
-      this.textToPost += `>>${postId} ` // the space is intentional
     }
   }
 

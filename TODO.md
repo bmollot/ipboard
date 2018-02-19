@@ -41,9 +41,6 @@
   - Boards
     - Board list?
 - Text commands
-  - Hash-based RNG
-    - dice
-    - range
   - Per-thread text processing
 - Replies
 - Link parsing

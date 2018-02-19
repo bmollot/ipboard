@@ -16,7 +16,7 @@
           <div class="post-nickname" :title="prettyFrom">{{ prettyNick }}</div>
           <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
           <div class="post-timestamp">{{ prettyTime }}</div>
-          <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
+          <div class="post-id hash link"><span @click="replyTo">{{ prettyId }}</span></div>
           <div class="post-options-toggle">
             <span v-if="optionsShown" @click="hideOptions">▲</span>
             <span v-else @click="showOptions">▼</span>
@@ -59,6 +59,7 @@
           
           <div v-if="fetchingAttachment" style="flex-shrink='1'">Downloading...</div>
         </div>
+        <div v-else class="post-text-spacer"></div>
         <div class="post-text-content" v-html="post.text"></div>
       </div>
       <div class="post-footer">
@@ -212,7 +213,7 @@ export default class PostContainer extends Vue {
           self.fetchingAttachment = false
         })
         window.setTimeout(() => {
-          
+
         }, a.size + 10000) // Give up after some time
       }
     }
@@ -277,6 +278,7 @@ export default class PostContainer extends Vue {
 </script>
 
 <style lang="scss">
+
 .post-container {
   display: block;
   padding: 0.5em;
@@ -313,13 +315,6 @@ export default class PostContainer extends Vue {
 .post-petname {
   font-weight: 600;
 }
-.post-id {
-  color: #0d56b4;
-}
-.post-id:hover {
-  color: #0e3870;
-  cursor: pointer;
-}
 .post-body {
   display: flex;
   flex-flow: wrap;
@@ -345,6 +340,9 @@ export default class PostContainer extends Vue {
 .post-thumbnail-container {
   max-width: 20vw;
   max-height: 20vh;
+}
+.post-text-spacer {
+  width: 1em;
 }
 .post-text-content {
  font-size: 1.2em;

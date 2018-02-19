@@ -2,6 +2,7 @@
 import 'normalize.css'
 import 'styles/base.scss'
 import 'styles/basePostProcessors.scss'
+import 'styles/tomorrow.scss'
 
 /* 
  * Import .vue files here, even though they aren't used, or else HardSourceWebpackPlugin breaks.
