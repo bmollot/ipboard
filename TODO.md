@@ -1,8 +1,3 @@
-- IPFS download progress indicator
-- Indication of whether a given post's attachment has been downloaded
-- DL link in mediainfo (make file name a hyperlink)
-- Autodownload files under some size/of some mimetype?
-
 - syncwatch
 - spoiler tags
 - bold
@@ -27,6 +22,7 @@
 
 - Styling - themes?
 
+- IPFS download progress indicator? Harder than I thought. May have to dig around ipfs internals.
 - OrbitDB type bindings
 - IPFS type bindings
 - bans?

@@ -11,17 +11,24 @@
     </div>
     <div class="post" v-if="!(hidden || blocked)">
       <div class="post-header">
-        <div class="post-nickname" :title="prettyFrom">{{ prettyNick }}</div>
-        <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
-        <div class="post-timestamp">{{ prettyTime }}</div>
-        <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
-        <div class="post-options-toggle">
-          <span v-if="optionsShown" @click="hideOptions">▲</span>
-          <span v-else @click="showOptions">▼</span>
+
+        <div class="post-header-row">
+          <div class="post-nickname" :title="prettyFrom">{{ prettyNick }}</div>
+          <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
+          <div class="post-timestamp">{{ prettyTime }}</div>
+          <div class="post-id hash"><span @click="replyTo">{{ prettyId }}</span></div>
+          <div class="post-options-toggle">
+            <span v-if="optionsShown" @click="hideOptions">▲</span>
+            <span v-else @click="showOptions">▼</span>
+          </div>
         </div>
-      </div>
-      <div v-if="post.attachment" class="post-media-info">
-        <span>{{post.attachment.name}}</span><span>{{post.attachment.size}}</span>
+
+        <div v-if="post.attachment" class="post-media-info post-header-row">
+          <span v-if="fetchedAttachment"><a :href="fullSrc" :download="post.attachment.name">{{post.attachment.name}}</a></span>
+          <span v-else>{{post.attachment.name}}</span>
+          <span>{{post.attachment.size}}</span>
+        </div>
+
       </div>
       <div class="post-body">
         <div v-if="post.attachment" class="post-media-content">
@@ -116,6 +123,10 @@ export default class PostContainer extends Vue {
     this.mediaExpanded = !this.mediaExpanded
   }
 
+  get fetchedAttachment(): boolean {
+    return this.fullSrc !== ''
+  }
+
   get userConfigs(): any {
     return this.$store.getters.userConfigs
   }
@@ -176,7 +187,7 @@ export default class PostContainer extends Vue {
     return new Date(this.post.timestamp).toLocaleString() // TODO make formatting configurable
   }
 
-  updateFullSrc() {
+  async updateFullSrc() {
     if (this.fetchingAttachment) return; // Do nothing if a fetch is in progress
     console.log("updateFullSrc called", this.fullSrc, this._fileBlob)
     const a = this.post.attachment
@@ -187,10 +198,11 @@ export default class PostContainer extends Vue {
         this.fetchingAttachment = true
         // Get full file from IPFS and set dataUri for future reference
         const self = this
-        this.$store.state.ipfsNode.files.get(a.content, (err: Error | undefined, files: {path: string, content: Buffer}[]) => {
+        this.$store.state.ipfsNode.files.get(a.content, async (err: Error | undefined, files: {path: string, content: Buffer}[]) => {
           console.log("Got file!", files)
           if (err) {
-            console.error("Failed to get file for ",self, err)
+            console.error("Failed to get file for ", self, err)
+            self.fetchingAttachment = false
             return
           }
           // Store downloaded data as a Blob on this component (will be cleaned by GC when this component is pruned)
@@ -199,6 +211,9 @@ export default class PostContainer extends Vue {
           self.fullSrc = URL.createObjectURL(self._fileBlob)
           self.fetchingAttachment = false
         })
+        window.setTimeout(() => {
+          
+        }, a.size + 10000) // Give up after some time
       }
     }
   }
@@ -286,9 +301,9 @@ export default class PostContainer extends Vue {
 }
 .post-header {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 }
-.post-header div {
+.post-header-row div {
   display: inline;
   margin-right: 0.3em;
 }
