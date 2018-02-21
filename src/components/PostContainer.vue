@@ -65,7 +65,11 @@
         <div class="post-referenced-by"
           v-for="referencerId in referencedBy"
           :key="referencerId">
-          <a :href="'#post-' + referencerId">>>{{prettifyId(referencerId)}}#</a>
+          <a
+            :href="'#post-' + referencerId"
+            @mouseover="highlight(referencerId)"
+            @mouseout="unhighlight(referencerId)"
+          >>>{{prettifyId(referencerId)}}#</a>
         </div>
       </div>
     </div>
@@ -114,6 +118,47 @@ export default class PostContainer extends Vue {
       }
     } else {
       this.attachmentType = 'NONE'
+    }
+  }
+  mounted() {
+    // for all child elements of class post-post-link (links to another post)...
+    const refs = this.$el.querySelectorAll('.post-post-link')
+    for (let i = 0; i < refs.length; i++) {
+      const ref = refs.item(i)
+      // that have an href value...
+      const href = ref.getAttribute('href')
+      if (href !== null) {
+        // which contains a string in the form of a base-58 multihash...
+        const res = /[0-z]{46}/g.exec(href)
+        if (res != null) {
+          // add event listeners for highlighting the linked post on hover.
+          const linkedPostId = res[0]
+          const self = this
+          ref.addEventListener('mouseover', ev => {
+            self.highlight(linkedPostId)
+          })
+          ref.addEventListener('mouseout', ev => {
+            self.unhighlight(linkedPostId)
+          })
+        }
+      }
+    }
+  }
+
+  highlight(postId: string) {
+    // Strip (You)s and transform to element id
+    const id = 'post-' + postId.split(' ')[0]
+    const target = document.getElementById(id)
+    if (target !== null) {
+      target.classList.add('post-highlighted')
+    }
+  }
+  unhighlight(postId: string) {
+    // Strip (You)s and transform to element id
+    const id = 'post-' + postId.split(' ')[0]
+    const target = document.getElementById(id)
+    if (target !== null) {
+      target.classList.remove('post-highlighted')
     }
   }
 
@@ -284,14 +329,21 @@ export default class PostContainer extends Vue {
 </script>
 
 <style lang="scss">
+@import '~styles/tomorrow';
 
+.post-highlighted {
+  background-color: lighten($bg, $amount: 1%) !important;
+}
 .post-container {
   display: block;
   padding: 0.5em;
-  margin: 0.1em;
+  margin: {
+    left: 0.2em;
+    bottom: 0.2em;
+  }
   width: fit-content;
   max-width: calc(100vw - 1.4em);
-  border: 1px solid black;
+  background-color: lighten($bg, $amount: 5%);
 }
 .post {
   display: flex;
@@ -365,6 +417,10 @@ export default class PostContainer extends Vue {
 .post-referenced-by {
   display: inline;
   font-size: 0.8em;
+  margin: {
+    left: 0.2em;
+    right: 0.2em;
+  }
 }
 </style>
 

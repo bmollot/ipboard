@@ -3,8 +3,8 @@
       <div class="left-controls">
         <input v-model="threadIdToJoin" placeholder="Thread ID to join">
         <button @click="joinThread(threadIdToJoin, last100 ? 100 : postsToShow)">JOIN</button>
-        <input type="checkbox" v-model="last100" name="last100">
-        <label for="last100">Last 100</label>
+        <input type="checkbox" v-model="last100" name="last100" class="vertical-center">
+        <label for="last100" class="vertical-center">Last 100</label>
         <button @click="toggleTest">{{testButMsg}}</button>
         <div v-if="!thread.backlogReplicated && !thread.isEmpty" class="thread-replicating vertical-center">
           <div class="loading-spinner"></div>
@@ -45,6 +45,10 @@ export default class ThreadControl extends Vue {
   threadIdToJoin: string | null = null
   isTesting: boolean = false
   testId: number | null = null
+
+  created() {
+    this.last100 = this.thread.postsToShow === 100
+  }
 
   get testButMsg(): string {
     return this.isTesting ? "STOP TEST" : "START TEST"
@@ -92,13 +96,14 @@ export default class ThreadControl extends Vue {
   }
 }
 </script>
-
 <style lang="scss">
+@import '~styles/tomorrow';
+
 .thread-panel {
   display: flex;
   justify-content: space-between;
-  background-color: #333333;
-  color: #DDDDDD;
+  background-color: $c5;
+  color: white;
 }
 .left-controls {
   display: flex;

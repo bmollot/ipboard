@@ -1,4 +1,10 @@
-- highlight / preview referenced posts on hover
+- merge (You)s and nicks
+- preview referenced posts on hover
+- profile editing
+  - horizontal posting
+  - manage mutes
+  - manage nick
+  - manage petnames
 
 - syncwatch
 - spoiler tags
@@ -7,8 +13,6 @@
 - preformatted
 - selection rolls
 - 8ball
-
-- more generic mimetype icons
 
 - nicer buttons
 - code highlighting
@@ -33,14 +37,7 @@
 - Liveposting?
   - interaction with spoiler tags?
 - Mobile - "responsive design", so breakpoints
-- Loading indicators - pretty ones tho
-  - Starting Vue
-  - Starting IPFS
-  - Replicating history
 - Welcome page
-- Nicknames
-  - User chosen
-  - Client authenticated
 - Thread list?
   - Boards
     - Board list?

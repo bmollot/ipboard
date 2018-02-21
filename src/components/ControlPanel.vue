@@ -1,21 +1,22 @@
 <template>
   <div class="control-panel">
-    <div class="ipfs-node-id-display">Your node ID is: <span class="hash">{{nodeId}}</span></div>
-    <div class="right-options">
-      <label>User profile</label>
-      <select placeholder="default" v-model="selectedUser" @change="userChange">
-        <option disabled value="">-</option>
-        <option v-for="user in users" :key="user" :value="user">{{user}}</option>
-      </select>
-      <button @click="showAddUserPanel">NEW</button>
-    </div>
-    <hr class="control-separater">
-    <div v-if="addUserPanelShown" class="add-user-panel">
+    <div class="control-top">
+      <div class="ipfs-node-id-display">Your node ID is: <span class="hash">{{nodeId}}</span></div>
       <div class="right-options">
+        <label>User profile</label>
+        <select placeholder="default" v-model="selectedUser" @change="userChange">
+          <option disabled value="">-</option>
+          <option v-for="user in users" :key="user" :value="user">{{user}}</option>
+        </select>
+        <button @click="showAddUserPanel">NEW</button>
+      </div>
+    </div>
+    
+    <div v-if="controlUserPanelShown" class="control-user-panel">
+      <div>
         <input type="text" v-model="newUser">
         <button @click="addUser" :disabled="addingUser">ADD</button>
       </div>
-      <hr>
     </div>
   </div>
 </template>
@@ -28,7 +29,7 @@ import UserConfig from 'types/userConfig';
 @Component
 export default class ControlPanel extends Vue {
   selectedUser: string = "default"
-  addUserPanelShown: boolean = false
+  controlUserPanelShown: boolean = false
   newUser: string = ""
   addingUser: boolean = false
 
@@ -50,12 +51,12 @@ export default class ControlPanel extends Vue {
     this.newUser = "Adding..."
     await this.$store.dispatch('addUserConfig', new UserConfig(newUser))
     this.newUser = ""
-    this.addUserPanelShown = false
+    this.controlUserPanelShown = false
     this.addingUser = false
   }
 
   showAddUserPanel() {
-    this.addUserPanelShown = true
+    this.controlUserPanelShown = true
   }
 }
 </script>
@@ -63,15 +64,15 @@ export default class ControlPanel extends Vue {
 <style lang="scss">
 .control-panel {
   font-size: 1em;
+  display: flex;
+  flex-direction: column;
 }
-.ipfs-node-id-display {
-  display: inline;
+.control-top {
+  display: flex;
+  justify-content: space-between;
 }
-.right-options {
-  float: right;
-}
-.control-separater {
-  clear: both;
-  margin: 0;
+.control-user-panel {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>
