@@ -11,6 +11,8 @@ import Vue from 'vue'
 import Component from 'vue-class-component'
 import {mapState} from 'vuex'
 
+import PostContainer from 'comp/PostContainer.vue'
+
 import ControlPanel from 'comp/ControlPanel.vue'
 import ThreadView from 'comp/ThreadView.vue'
 import Loading from 'comp/Loading.vue'

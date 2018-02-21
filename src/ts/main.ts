@@ -9,9 +9,9 @@ import 'styles/tomorrow.scss'
  * This seems to be a specific issue with importing .vue files from a <script lang="ts"> block in
  * another .vue file. ¯\_(ツ)_/¯
  */
+import 'comp/PostContainer.vue'
 import 'comp/ControlPanel.vue'
 import 'comp/Loading.vue'
-import 'comp/PostContainer.vue'
 import 'comp/PostList.vue'
 import 'comp/ThreadControl.vue'
 import 'comp/ThreadFooter.vue'

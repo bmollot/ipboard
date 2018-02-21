@@ -1,3 +1,10 @@
+@import "base";
+
 .quote {
   color: forestgreen;
+}
+
+.post-post-link {
+  @extend .hash;
+  display: inline;
 }

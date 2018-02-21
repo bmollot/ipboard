@@ -63,17 +63,18 @@ const postLink = makePostProcessor(
         if (referencedPost) {
           // Add a (You) if the post being referenced is yours
           if (nodeId === referencedPost.fromId) {
-            you = " (You)"
+            you = "(You)"
           }
         }
         // References unknown post, make note of that
         else {
           unknown = true
-          you = " (?)"
+          you = "(?)"
         }
         const el = unknown ? 'span' : 'a'
         const href = unknown ? '' : `href="#post-${postId}"`
-        return `<${el} class="post-post-link" ${href}>${prefix + postId + you}#${trailing}</${el}>`
+        const pPostId = postId.substr(-6,6)
+        return `<${el} class="post-post-link" ${href}>${prefix + pPostId + you}#${trailing}</${el}>`
       }
     )
     

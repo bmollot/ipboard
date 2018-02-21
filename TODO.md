@@ -1,3 +1,5 @@
+- highlight / preview referenced posts on hover
+
 - syncwatch
 - spoiler tags
 - bold
@@ -5,6 +7,8 @@
 - preformatted
 - selection rolls
 - 8ball
+
+- more generic mimetype icons
 
 - nicer buttons
 - code highlighting

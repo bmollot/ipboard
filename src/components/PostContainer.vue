@@ -47,28 +47,27 @@
           <div v-else>
             <div v-if="mediaExpanded && !fetchingAttachment">
               <a :href="fullSrc" :download="post.attachment.name">
-                <img :src="otherFilePreview" :alt="attachmentAlt">
+                <img :src="previewSrc" :alt="attachmentAlt">
               </a>
             </div>
             <div v-else
               @click="toggleMediaExpanded"
               :style="'cursor: ' + (fetchingAttachment ? 'progress' : 'pointer')">
-              <img :src="otherFilePreview" :alt="attachmentAlt">
+              <img :src="previewSrc" :alt="attachmentAlt">
             </div>
           </div>
           
           <div v-if="fetchingAttachment" style="flex-shrink='1'">Downloading...</div>
         </div>
-        <div v-else class="post-text-spacer"></div>
         <div class="post-text-content" v-html="post.text"></div>
       </div>
       <div class="post-footer">
-          <div class="post-referenced-by"
-            v-for="referencerId in referencedBy"
-            :key="referencerId">
-            <a :href="'#post-' + referencerId">>>{{referencerId}}#</a>
-          </div>
+        <div class="post-referenced-by"
+          v-for="referencerId in referencedBy"
+          :key="referencerId">
+          <a :href="'#post-' + referencerId">>>{{prettifyId(referencerId)}}#</a>
         </div>
+      </div>
     </div>
     <div v-else-if="!blocked" class="post-hidden">
       <button @click="unhide">➕</button>
@@ -85,7 +84,7 @@ import UserConfig from 'types/userConfig'
 import LocalStore from 'types/localStore'
 import ThreadConfig from 'types/threadConfig'
 
-import FilePng from 'res/img/file.png'
+import mimeThumb from 'utils/mimeThumb'
 
 @Component({
   props: ['post', 'threadAddress']
@@ -100,7 +99,6 @@ export default class PostContainer extends Vue {
   _fileBlob: Blob | null = null
   fetchingAttachment = false
   attachmentType: 'NONE' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'OTHER' = 'NONE'
-  otherFilePreview = FilePng
 
   created() {
     const a = this.post.attachment
@@ -182,7 +180,11 @@ export default class PostContainer extends Vue {
     return this.petNames[this.fromId] || ""
   }
   get prettyId(): string {
-    return this.post.id
+    return this.prettifyId(this.post.id)
+  }
+  prettifyId(id: string): string {
+    const y = id.split(' ')
+    return y[0].substr(-6,6) + (y[1] || '')
   }
   get prettyTime(): string {
     return new Date(this.post.timestamp).toLocaleString() // TODO make formatting configurable
@@ -220,11 +222,15 @@ export default class PostContainer extends Vue {
   }
   get previewSrc(): string {
     const a = this.post.attachment
-    if (a && a.thumbnail) {
-      console.log("Rendering preview", a)
-      return a.thumbnail
+    if (a) {
+      if (a.thumbnail) {
+        console.log("Rendering preview", a)
+        return a.thumbnail
+      }
+      return mimeThumb(a.mime)
     }
-    return "" // TODO: Replace with placeholder based on mimetype
+    
+    return "" // No attachment, no preview
   }
   get attachmentAlt(): string {
     const a = this.post.attachment
@@ -315,17 +321,18 @@ export default class PostContainer extends Vue {
 .post-petname {
   font-weight: 600;
 }
-.post-body {
-  display: flex;
-  flex-flow: wrap;
-}
 .post-media-content {
-  margin-right: 1em;
-  margin-bottom: 1em;
+  margin: {
+    left: 0.5em;
+    top: 1em;
+    right: 2em;
+    bottom: 2em;
+  }
   max-width: fit-content;
   max-height: fit-content;
   display: flex;
   flex-direction: column;
+  float: left;
   cursor: pointer;
 }
 .post-media-content div {
@@ -341,12 +348,15 @@ export default class PostContainer extends Vue {
   max-width: 20vw;
   max-height: 20vh;
 }
-.post-text-spacer {
-  width: 1em;
-}
 .post-text-content {
- font-size: 1.2em;
- white-space: pre-wrap;
+  margin: {
+    left: 2em;
+    top: 0.5em;
+    bottom: 0.5em;
+    right: 1em;
+  }
+  font-size: 1em;
+  white-space: pre-wrap;
 }
 .post-footer {
   clear: both;
