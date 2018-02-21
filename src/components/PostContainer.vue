@@ -67,8 +67,8 @@
           :key="referencerId">
           <a
             :href="'#post-' + referencerId"
-            @mouseover="highlight(referencerId)"
-            @mouseout="unhighlight(referencerId)"
+            @mouseover="ev => highlight(ev, referencerId)"
+            @mouseout="ev => unhighlight(ev, referencerId)"
           >>>{{prettifyId(referencerId)}}#</a>
         </div>
       </div>
@@ -135,10 +135,10 @@ export default class PostContainer extends Vue {
           const linkedPostId = res[0]
           const self = this
           ref.addEventListener('mouseover', ev => {
-            self.highlight(linkedPostId)
+            self.highlight(ev, linkedPostId)
           })
           ref.addEventListener('mouseout', ev => {
-            self.unhighlight(linkedPostId)
+            self.unhighlight(ev, linkedPostId)
           })
           // and set link text
           ref.textContent = `>>${this.prettifyId(linkedPostId)}#${ref.textContent}`
@@ -147,20 +147,33 @@ export default class PostContainer extends Vue {
     }
   }
 
-  highlight(postId: string) {
+  highlight(ev: Event, postId: string) {
     // Strip (You)s and transform to element id
-    const id = 'post-' + postId.split(' ')[0]
+    const id = 'post-' + postId
     const target = document.getElementById(id)
     if (target !== null) {
       target.classList.add('post-highlighted')
+      const clone = target.cloneNode(true)
+      if (clone instanceof HTMLElement) {
+        clone.id += '-clone'
+        clone.style.position = 'fixed'
+        const rect = (<HTMLElement>ev.target).getBoundingClientRect()
+        clone.style.left = rect.left + 'px'
+        clone.style.top = rect.top - target.getBoundingClientRect().height + 'px'
+        this.$el.appendChild(clone)
+      }
     }
   }
-  unhighlight(postId: string) {
+  unhighlight(ev: Event, postId: string) {
     // Strip (You)s and transform to element id
-    const id = 'post-' + postId.split(' ')[0]
+    const id = 'post-' + postId
     const target = document.getElementById(id)
     if (target !== null) {
       target.classList.remove('post-highlighted')
+    }
+    const clone = document.getElementById(id + '-clone')
+    if (clone !== null) {
+      clone.remove()
     }
   }
 
@@ -238,7 +251,7 @@ export default class PostContainer extends Vue {
     const pet = this.petNameOf(id)
     return this.shortenId(id) + (pet !== '' ? ` (${pet})` : pet)
   }
-  petNameOf(id: string): string {
+  postFromId(id: string): Post | null {
     // Collect a list of posts that this id may belong to (should *really* always be a singleton list)
     const candidates = this.post.memberOf.reduce((a: Post[], x) => {
       const post = x._postById[id]
@@ -249,9 +262,13 @@ export default class PostContainer extends Vue {
     }, [])
     // Post with the given id wasn't found in any known thread
     if (candidates.length < 1) {
-      return '???'
+      return null
     }
-    return this.petNames[candidates[0].fromId] || ''
+    return candidates[0]
+  }
+  petNameOf(id: string): string {
+    const post = this.postFromId(id)
+    return this.petNames[post ? post.fromId : ''] || ''
   }
   get prettyTime(): string {
     return new Date(this.post.timestamp).toLocaleString() // TODO: make formatting configurable
@@ -350,10 +367,10 @@ export default class PostContainer extends Vue {
 </script>
 
 <style lang="scss">
-@import '~styles/tomorrow';
+@import '~styles/colors';
 
 .post-highlighted {
-  background-color: lighten($bg, $amount: 1%) !important;
+  background-color: $lbg !important;
 }
 .post-container {
   display: block;
@@ -364,7 +381,7 @@ export default class PostContainer extends Vue {
   }
   width: fit-content;
   max-width: calc(100vw - 1.4em);
-  background-color: lighten($bg, $amount: 5%);
+  background-color: $llbg;
 }
 .post {
   display: flex;
@@ -377,7 +394,7 @@ export default class PostContainer extends Vue {
   float: right;
 }
 .post-options-toggle:hover {
-  color: #666666;
+  color: $c8;
   cursor: pointer;
 }
 .post-header {

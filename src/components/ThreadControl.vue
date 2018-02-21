@@ -97,13 +97,13 @@ export default class ThreadControl extends Vue {
 }
 </script>
 <style lang="scss">
-@import '~styles/tomorrow';
+@import '~styles/colors';
 
 .thread-panel {
   display: flex;
   justify-content: space-between;
   background-color: $c5;
-  color: white;
+  color: $c15;
 }
 .left-controls {
   display: flex;

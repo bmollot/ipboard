@@ -1,1 +1,4 @@
-@import 'tomorrow'
+@import 'tomorrow';
+
+$lbg: lighten($bg, 1%);
+$llbg: lighten($bg, 5%);

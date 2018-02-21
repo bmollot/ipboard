@@ -1,4 +1,3 @@
-- preview referenced posts on hover
 - profile editing
   - horizontal posting
   - manage mutes
