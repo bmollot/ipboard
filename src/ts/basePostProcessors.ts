@@ -56,25 +56,16 @@ const postLink = makePostProcessor(
           group: 'references',
           message: postId,
         })
-        let you = ""
         let unknown = false
         const referencedPost = env.kv.self._postById[postId]
         const nodeId = env.kv.nodeId
-        if (referencedPost) {
-          // Add a (You) if the post being referenced is yours
-          if (nodeId === referencedPost.fromId) {
-            you = "(You)"
-          }
-        }
         // References unknown post, make note of that
-        else {
+        if (referencedPost === undefined) {
           unknown = true
-          you = "(?)"
         }
         const el = unknown ? 'span' : 'a'
         const href = unknown ? '' : `href="#post-${postId}"`
-        const pPostId = postId.substr(-6,6)
-        return `<${el} class="post-post-link" ${href}>${prefix + pPostId + you}#${trailing}</${el}>`
+        return `<${el} class="post-post-link" ${href}>${trailing}</${el}>`
       }
     )
     

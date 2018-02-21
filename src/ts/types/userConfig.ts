@@ -1,5 +1,7 @@
 import Storable from 'types/storable'
-import { Profile } from 'types/profile';
+import { Profile } from 'types/profile'
+
+import store from 'ts/store'
 
 export default class UserConfig implements Storable {
   constructor(userName?: string) {
@@ -8,6 +10,7 @@ export default class UserConfig implements Storable {
       nickName: userName
     }
     this.petNames = {} // nodeId => name
+    this.petNames[store.state.ipfsInfo.id] = "You"
     this.blockedNodes = []
   }
 

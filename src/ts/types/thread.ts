@@ -209,7 +209,6 @@ export default class Thread {
         }
         // This is a novel post, and needs to be processed
         else {
-          // this.updateProgress(entry, (this.replicationProgress.done || 0) + 1)
           // Note that size is calculated before processing the post. The restriction is for transit size
           const size = JSON.stringify(entry.payload.value).length * 2 // rough strlen to bytes conversion
           if (size <= MAX_POST_SIZE_BYTES) {
@@ -225,12 +224,11 @@ export default class Thread {
   
             const self = this
             post.notes.filter(x => x.group && x.group === 'references').forEach(x => {
-              const you = post.fromId === self._nodeInfo.id ? " (You)" : ""
               const note = {
                 id: 'referenced-by-' + post.id + "-" + Math.random(),
                 type: <'INFO'>'INFO', // Why Typescript, why?
                 group: 'referenced-by',
-                message: post.id + you,
+                message: post.id,
               }
               // The referenced post has been seen, so add the referenced-by note to it
               const referencedPost = self._postById[x.message]
@@ -294,8 +292,8 @@ export default class Thread {
       fromId: entry.id,
       profile: Object.assign({}, defaultProfile, v.profile),
       notes: [],
+      memberOf: [this],
     })
-    if (entry.id === myId) post.profile.nickName += " (You)" // TODO: make not a hack
     return this.processPost(post)
   }
   processPost(post: Post): Post {

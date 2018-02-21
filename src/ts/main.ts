@@ -34,20 +34,6 @@ const OrbitDB = require('orbit-db')
 import ipfsConfig from 'utils/ipfs.config'
 const node = new Ipfs(ipfsConfig)
 
-// Retrieve user profile configs from storage backend
-store.state.globalConfig.getResolve<string[]>('users').then(
-  userStrings => {
-    let users = userStrings || []
-    if (userStrings === undefined) {
-      store.state.globalConfig.put('users', ['default'])
-      users = ['default']
-    }
-    users.forEach(userName => {
-      store.dispatch('addUserConfig', new UserConfig(userName))
-    })
-  }
-)
-
 // Register a global custom directive called `v-focus`
 Vue.directive('focus', {
   // When the bound element is inserted into the DOM...
@@ -72,4 +58,21 @@ node.once('ready', () => node.id((err: Error, info: any) => {
   const orbit = new OrbitDB(node)
   store.commit('updateIpfsNode', {newIpfsNode: node, newInfo: info})
   store.commit('updateDB', {newDB: orbit})
+
+  // Needs to wait on node info to populate (You) nickname
+  // Retrieve user profile configs from storage backend
+  store.state.globalConfig.getResolve<string[]>('users').then(
+    userStrings => {
+      let users = userStrings || []
+      // If no user profiles are found, populate the default one
+      if (userStrings === undefined) {
+        store.state.globalConfig.put('users', ['default'])
+        users = ['default']
+      }
+      // Add retrieved profiles to the global store
+      users.forEach(userName => {
+        store.dispatch('addUserConfig', new UserConfig(userName))
+      })
+    }
+  )
 }))

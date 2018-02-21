@@ -14,7 +14,7 @@
 
         <div class="post-header-row">
           <div class="post-nickname" :title="prettyFrom">{{ prettyNick }}</div>
-          <div v-show="prettyPet !== ''" class="post-petname">({{ prettyPet }})</div>
+          <div class="post-petname">{{ prettyPet }}</div>
           <div class="post-timestamp">{{ prettyTime }}</div>
           <div class="post-id hash link"><span @click="replyTo">{{ prettyId }}</span></div>
           <div class="post-options-toggle">
@@ -131,7 +131,7 @@ export default class PostContainer extends Vue {
         // which contains a string in the form of a base-58 multihash...
         const res = /[0-z]{46}/g.exec(href)
         if (res != null) {
-          // add event listeners for highlighting the linked post on hover.
+          // add event listeners for highlighting the linked post on hover
           const linkedPostId = res[0]
           const self = this
           ref.addEventListener('mouseover', ev => {
@@ -140,6 +140,8 @@ export default class PostContainer extends Vue {
           ref.addEventListener('mouseout', ev => {
             self.unhighlight(linkedPostId)
           })
+          // and set link text
+          ref.textContent = `>>${this.prettifyId(linkedPostId)}#${ref.textContent}`
         }
       }
     }
@@ -221,23 +223,42 @@ export default class PostContainer extends Vue {
   get fromId(): string {
     return this.post.fromId
   }
+  // Return this post's author's pet name in parenthesis, or the empty string if no pet name has been given
   get prettyPet(): string {
-    return this.petNames[this.fromId] || ""
+    return this.petNames[this.fromId] ? `(${this.petNames[this.fromId]})` : ''
   }
   get prettyId(): string {
-    return this.prettifyId(this.post.id)
+    return this.shortenId(this.post.id)
   }
+  shortenId(id: string): string {
+    return id.substr(-6,6)
+  }
+  // Return the given id shortened and with nick name appended
   prettifyId(id: string): string {
-    const y = id.split(' ')
-    return y[0].substr(-6,6) + (y[1] || '')
+    const pet = this.petNameOf(id)
+    return this.shortenId(id) + (pet !== '' ? ` (${pet})` : pet)
+  }
+  petNameOf(id: string): string {
+    // Collect a list of posts that this id may belong to (should *really* always be a singleton list)
+    const candidates = this.post.memberOf.reduce((a: Post[], x) => {
+      const post = x._postById[id]
+      if (post) {
+        a.push(post)
+      }
+      return a
+    }, [])
+    // Post with the given id wasn't found in any known thread
+    if (candidates.length < 1) {
+      return '???'
+    }
+    return this.petNames[candidates[0].fromId] || ''
   }
   get prettyTime(): string {
-    return new Date(this.post.timestamp).toLocaleString() // TODO make formatting configurable
+    return new Date(this.post.timestamp).toLocaleString() // TODO: make formatting configurable
   }
 
   async updateFullSrc() {
     if (this.fetchingAttachment) return; // Do nothing if a fetch is in progress
-    console.log("updateFullSrc called", this.fullSrc, this._fileBlob)
     const a = this.post.attachment
     // Only return a src uri if the post *has* an attachment
     if (a) {

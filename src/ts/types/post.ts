@@ -1,4 +1,5 @@
 import {Profile} from 'types/profile'
+import Thread from 'types/thread'
 
 /**
  * Represents a Post that hasn't yet been sent
@@ -28,6 +29,7 @@ interface Post extends UnPost {
   fromId: string
   profile: Profile
   notes: Array<Note>
+  memberOf: Thread[]
 }
 
 type NoteType = "INFO" | "WARNING" | "ERROR"

@@ -1,4 +1,3 @@
-- merge (You)s and nicks
 - preview referenced posts on hover
 - profile editing
   - horizontal posting
