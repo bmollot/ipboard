@@ -17,20 +17,23 @@ export default class LocalStore<T> {
   }
 
   static from<T extends Storable>(obj: T) {
-    return new LocalStore<T>(obj.path(), obj, obj.defaults)
+    return new LocalStore<T>(obj.path(), obj, obj.defaults())
   }
 
   async load() {
-    if (this.defaults !== null) {
-      const temp: any = {}
-      await Promise.all(Object.keys(this.data).map(async key => {
-        const val = await this.getResolve<any>(key)
-        console.log(temp)
-        if (val !== undefined) temp[key] = val
-      }))
-      this.data = Object.assign({}, this.defaults, this.data, temp)
-      console.log("done loading", this.data)
+    if (this.defaults) {
+      for (const prop in this.defaults) {
+        if (!(<any>this.data)[prop]) (<any>this.data)[prop] = this.defaults[prop]
+      }
     }
+    const temp: any = {}
+    await Promise.all(Object.keys(this.data).map(async key => {
+      const val = await this.getResolve<any>(key)
+      console.log(temp)
+      if (val !== undefined) temp[key] = val
+    }))
+    Object.assign(this.data, temp)
+    console.log("done loading", this.data)
   }
   async save() {
     const batch = this.batchChain()

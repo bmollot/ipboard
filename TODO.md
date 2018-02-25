@@ -1,5 +1,4 @@
 - profile editing
-  - horizontal posting
   - manage mutes
   - manage nick
   - manage petnames

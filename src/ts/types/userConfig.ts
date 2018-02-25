@@ -6,25 +6,32 @@ import store from 'ts/store'
 export default class UserConfig implements Storable {
   constructor(userName?: string) {
     this.userName = userName || "default"
-    if (userName && userName !== "default") this.profile = {
-      nickName: userName
-    }
-    this.petNames = {} // nodeId => name
     this.petNames[store.state.ipfsInfo.id] = "You"
-    this.blockedNodes = []
   }
 
   path() {
     return `user/${this.userName}/config`
   }
-  static defaults() {
-    return {}
+  defaults() {
+    return undefined
+  }
+
+  profile(): Profile | undefined {
+    if (this.nickName && this.nickName !== '') {
+      return {
+        nickName: this.nickName
+      }
+    }
+    return undefined
   }
 
   userName: string
-  profile?: Profile
-  petNames: any // string => string
-  blockedNodes: string[]
+  nickName: string = ""
+  petNames: {
+    [id: string]: string
+  } = {}
+  blockedNodes: string[] = []
+  horizontalPosts: boolean = false
   // not implemented
   relativeTimestamps?: boolean
   showTumbnails?: boolean
@@ -34,6 +41,5 @@ export default class UserConfig implements Storable {
   notifyOnPost?: boolean
   notifyOnReply?: boolean
   recursivePostHiding?: boolean
-  horizontalPosts?: boolean
   theme?: any
 }

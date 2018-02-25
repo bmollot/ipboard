@@ -1,5 +1,9 @@
 <template>
-  <div :id="'post-' + post.id" class="post-container" v-if="!blocked">
+  <div
+    :id="'post-' + post.id"
+    class="post-container"
+    :class="userConfig.data.horizontalPosts ? 'post-horizontal' : ''"
+    v-if="!blocked">
     <div v-if="optionsShown" class="post-options">
       <input type="text" v-model="newPetName" ref="petNameInput">
       <button @click="hide">HIDE</button>
@@ -368,17 +372,19 @@ export default class PostContainer extends Vue {
 
 <style lang="scss">
 @import '~styles/colors';
-
+.post-horizontal {
+  display: inline-block;
+}
 .post-highlighted {
   background-color: $lbg !important;
 }
 .post-container {
-  display: block;
   padding: 0.5em;
   margin: {
     left: 0.2em;
     bottom: 0.2em;
   }
+  width: -moz-fit-content;
   width: fit-content;
   max-width: calc(100vw - 1.4em);
   background-color: $llbg;

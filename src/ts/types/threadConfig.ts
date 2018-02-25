@@ -9,12 +9,12 @@ export default class ThreadConfig implements Storable {
   path() {
     return `thread/${this.threadName}/config`
   }
-  static defaults() {
+  defaults() {
     return {
       relativeTimestamps: false,
       showTumbnails: true,
       animatedThumbnails: false,
-      imageHoverExpansion: true,
+      imageHoverExpansion: false,
       videoHoverExpansion: false, // includes animated gifs/pngs
       notifyOnPost: false,
       notifyOnReply: false,
@@ -27,14 +27,14 @@ export default class ThreadConfig implements Storable {
   threadName: string
   hiddenPosts: string[]
   // not implemented
-  relativeTimestamps: boolean
-  showTumbnails: boolean
-  animatedThumbnails: boolean
-  imageHoverExpansion: boolean
-  videoHoverExpansion: boolean // includes animated gifs/pngs
-  notifyOnPost: boolean
-  notifyOnReply: boolean
-  recursivePostHiding: boolean
-  horizontalPosts: boolean
+  relativeTimestamps: boolean = false
+  showTumbnails: boolean = true
+  animatedThumbnails: boolean = false
+  imageHoverExpansion: boolean = false
+  videoHoverExpansion: boolean = false // includes animated gifs/pngs
+  notifyOnPost: boolean = false
+  notifyOnReply: boolean = false
+  recursivePostHiding: boolean = false
+  horizontalPosts: boolean = false
   theme: any
 }

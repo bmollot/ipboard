@@ -16,6 +16,7 @@ import 'comp/PostList.vue'
 import 'comp/ThreadControl.vue'
 import 'comp/ThreadFooter.vue'
 import 'comp/ThreadView.vue'
+import 'comp/EditableList.vue'
 
 // Deps
 import Vue from 'vue'
@@ -53,7 +54,7 @@ const vm = new Vue({
   },
 })
 // Show spinner until IPFS is ready
-node.once('ready', () => node.id((err: Error, info: any) => {
+node.once('ready', () => node.id(async (err: Error, info: any) => {
   if (err) throw err
   const orbit = new OrbitDB(node)
   store.commit('updateIpfsNode', {newIpfsNode: node, newInfo: info})
@@ -61,18 +62,21 @@ node.once('ready', () => node.id((err: Error, info: any) => {
 
   // Needs to wait on node info to populate (You) nickname
   // Retrieve user profile configs from storage backend
-  store.state.globalConfig.getResolve<string[]>('users').then(
-    userStrings => {
-      let users = userStrings || []
-      // If no user profiles are found, populate the default one
-      if (userStrings === undefined) {
-        store.state.globalConfig.put('users', ['default'])
-        users = ['default']
-      }
-      // Add retrieved profiles to the global store
-      users.forEach(userName => {
-        store.dispatch('addUserConfig', new UserConfig(userName))
-      })
-    }
-  )
+  const userStrings = await store.state.globalConfig.getResolve<string[]>('users')
+  let users = userStrings || []
+  // If no user profiles are found, populate the default one
+  if (userStrings === undefined) {
+    store.state.globalConfig.put('users', ['default'])
+    users = ['default']
+  }
+
+  // Add retrieved profiles to the global store
+  await Promise.all(users.map(async userName => {
+    await store.dispatch('addUserConfig', new UserConfig(userName))
+  }))
+
+  const user = await store.state.globalConfig.getResolve<string>('currentUser')
+  if (user) {
+    store.commit('updateUser', {newUser: user})
+  }
 }))

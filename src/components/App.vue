@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <control-panel></control-panel>
+    <control-panel v-if="usersReady"></control-panel>
     <thread-view v-if="dbReady"></thread-view>
     <loading v-else></loading>
   </div>
@@ -33,6 +33,9 @@ export default class App extends Vue {
   }
   get dbReady() {
     return this.$store.getters.isDBReady
+  }
+  get usersReady() {
+    return this.$store.getters.areUsersReady
   }
 
 }

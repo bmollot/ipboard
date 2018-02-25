@@ -128,7 +128,8 @@ export default class ThreadView extends Vue {
   }
 
   post(msg: string, attachment?: PostAttachment) {
-    this.thread.post(msg, this.userConfig.data.profile, attachment)
+    console.log(this.userConfig)
+    this.thread.post(msg, this.userConfig.data.profile(), attachment)
   }
   replyTo(postId: string) {
     let footer = this.$refs.footer
