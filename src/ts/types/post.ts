@@ -8,6 +8,7 @@ interface UnPost {
   kind: "Post"
   timestamp: number
   text: string
+  fromId: string
   profile?: Profile
   attachment?: PostAttachment
 }
@@ -26,7 +27,6 @@ interface PostAttachment {
 interface Post extends UnPost {
   kind: "Post"
   id: string
-  fromId: string
   profile: Profile
   notes: Array<Note>
   memberOf: Thread[]

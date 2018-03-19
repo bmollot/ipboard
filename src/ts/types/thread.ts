@@ -5,10 +5,14 @@ import escapeHtml from 'utils/escapeHtml'
 import {PostProcessor} from 'types/postProcessor'
 import PPE from 'types/postProcessorEnvironment'
 import {UnPost, Post, Note, PostAttachment} from 'types/post'
+import Kelp from 'types/kelp'
 
 import * as basePostProcessors from 'ts/basePostProcessors'
 
 import * as _ from 'lodash'
+import {Multihash} from 'types/multihash-shim'
+const MH: Multihash = require('multihashes')
+
 import { defaultProfile, Profile } from 'types/profile'
 import {
   MAX_UNPOST_SIZE_BYTES,
@@ -16,6 +20,7 @@ import {
   ALLOWED_THREAD_DIRTINESS,
   THREAD_CONNECTION_TIMEOUT
 } from 'ts/constants'
+import { HashedEntry, RootEntry, AppendEntry, MetaEntry } from 'types/kelp/entry';
 
 interface String_Post {
   [id: string]: Post | undefined
@@ -31,8 +36,8 @@ export default class Thread {
   address: string = ""
   backlogReplicated: boolean = false
   replicationProgress: {done: number | null, target: number | null} = {
-    done: null,
-    target: null,
+    done: 0,
+    target: Infinity,
   }
   postProcessors: PostProcessor[]
   initTime = 0
@@ -43,14 +48,14 @@ export default class Thread {
   _postById: String_Post = {}
   _haveNeededPosts: boolean = false
   _timeUntilDesynced = 10000 // milliseconds
-  _log: any
+  _log?: Kelp
   _syncedHandle: number | undefined
   _pubsub: any
   _nodeInfo: any
-  _pubSubHandlerInstance: any
   _latestEntryId?: string
   _latestPostTimestamp: number = 0
-  _dirtiness: number = 0
+  _lastUpdateTimestamp: number = 0
+  _queuedUpdateHandle: number | null = null
 
   constructor(id: string, postsToShow: number, postProcessors?: PostProcessor[]) {
     this.id = id
@@ -61,17 +66,12 @@ export default class Thread {
   // Constructor because constructors must be syncronous. Consider a pattern
   // with a psuedo-constructor that returns a Promise<Thread> as the only
   // public construction method.
-  async _initLog(db: any) {
-    let log = this._log = await db.eventlog(this.id, {write: ['*']})
-    this.address = log.address.toString()
-    log.events.on('replicated', this.onEntryHandler.bind(this, 'remote'))
-    log.events.on('write', this.onEntryHandler.bind(this, 'self'))
-    log.events.on('replicate.progress', this.progressHandler.bind(this))
-    this._pubSubHandlerInstance = this._pubSubHandler.bind(this)
-    this._pubsub.subscribe(this.address, this._pubSubHandlerInstance)
+  async _initLog(db: Kelp) {
+    this.address = db.address.toString()
+    db.onupdate = this.onEntryHandler.bind(this, 'remote')
     this.initTime = Date.now()
   }
-  async _initOther(db: any) {
+  async _initOther(db: Kelp) {
     const self = this
     this._nodeInfo = await new Promise((resolve, reject) => {
       db._ipfs.id((err: Error, info: any) => {
@@ -97,40 +97,44 @@ export default class Thread {
    * with a psuedo-constructor that returns a Promise<Thread> as the only
    * public construction method.
    * 
-   * @param db An OrbitDB instance
+   * @param db A Kelp instance
    * @returns Promise<Promise<void>>. Intentionally tiered promise.
    *          The outer promise resolves when the Thread is ready for use.
    *          The inner promise resolves when the Thread is performant.
    *          The inner promise is almost meaningless atm, feel free to only await
    *          the outer one.
    */
-  async init(db: any) {
+  async init(node: any) {
     // Synchonous
+    const db = new Kelp(node, this.id)
+    await db.init()
+    this._log = db
     this._pubsub = db._ipfs.pubsub
     // Parallel async inits (so performance)
     await Promise.all([
       this._initLog.bind(this, db)(),
       this._initOther.bind(this, db)(),
     ])
-    // Optional extra await
-    return this._log.load() // This just boosts perf when complete, no need to wait
   }
   post(text: string, profile?: Profile, attachment?: PostAttachment) {
     let post: UnPost = {
       kind: "Post",
       timestamp: Date.now(),
+      fromId: this._nodeInfo.id,
       text,
       profile,
       attachment,
     }
     this._add(post)
   }
-  _add(payload: Object) {
-    const size = JSON.stringify(payload).length * 2 // approximation of byte size of string
-    if (size <= MAX_UNPOST_SIZE_BYTES) {
-      this._log.add(payload)
+  _add(payload: Buffer | Object) {
+    // Ignore if init() has not been called successfully
+    if (!this._log) return
+    const buf = Buffer.isBuffer(payload) ? payload : Buffer.from(JSON.stringify(payload))
+    if (buf.length <= MAX_UNPOST_SIZE_BYTES) {
+      this._log.append(buf)
     } else {
-      console.error("Refused to send a post of size " + size + "B")
+      console.error("Refused to send a post of size " + buf.length + "B")
     }
   }
   get postsToShow() {
@@ -139,9 +143,6 @@ export default class Thread {
   set postsToShow(x: number) {
     this._postsToShow = x
     this.updateProgress()
-  }
-  progressHandler(forThreadId: string, entryHash: string, entry: any, progress: number, haveMap: any) {
-    this.updateProgress(entry, progress)
   }
   updateProgress(entry?: any, progress?: number) {
     if (progress) this.replicationProgress.done = progress
@@ -156,102 +157,92 @@ export default class Thread {
     }
   }
   onEntryHandler(source: 'remote' | 'self') {
+    if (!this._log) return
+
     this.isEmpty = false
-    let entries: any[]
-    if (!this.backlogReplicated) {
-      entries = this._log.iterator({
-        limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
-      }).collect()
-      // If the first known entry has no 'next' hashes, we've fetched the whole history
-      if (entries[0].next.length === 0) {
-        this.backlogReplicated = true
-        console.log("BACKLOG SYNCED")
-      }
-      if (entries.length >= this.postsToShow) {
-        this.backlogReplicated = true
-        console.log("FETCHED ENOUGH")
-      }
-    }
+    let entries: HashedEntry[]
+    
     // Once replication has finished, ensure that only new entries are processed
-    if (this.backlogReplicated) {
-      // If update comes from others, recalc entire thread
-      if (source === 'remote') {
-        entries = this._log.iterator({
-          limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
-        }).collect()
-        this.updatePosts(entries, true)
-      }
-      // Otherwise, just add new posts
-      else {
-        entries = this._log.iterator({
-          limit: this.postsToShow === Infinity ? -1 : this.postsToShow,
-          gte: this._latestEntryId,
-        }).collect()
-        this.updatePosts(entries)
-      }
+    // debounce updates to max once every tenth of a second
+    if (Date.now() - this._lastUpdateTimestamp >= 100) {
+      this.updatePosts(this._log.entries, true)
+    }
+    // And queue up a final update call
+    else if (this._queuedUpdateHandle === null) {
+      const self = this
+      this._queuedUpdateHandle = window.setTimeout(() => {
+        if (self._log) self.updatePosts(self._log.entries, true)
+        self._queuedUpdateHandle = null
+      }, 100)
     }
   }
-  updatePosts(entries: any[], purge = false) {
+  updatePosts(entries: HashedEntry[], purge = false) {
+    this._lastUpdateTimestamp = Date.now()
     const temp: Post[] = []
     console.log("ENTRIES UPDATED", entries)
     for (let entry of entries) {
-      if (entry.payload.value.kind === 'Post') {
 
-        // This post has already been processed
-        let post: Post = <Post>this._postById[entry.hash]
-        if (post !== undefined) {
+      // This post has already been processed
+      const strHash = MH.toB58String(entry.hash)
+      let post: Post | null = <Post>this._postById[strHash] || null
+      if (post !== null) {
+        // Add notes from other posts that came out of order
+        const notes = this._backNotes[post.id]
+        if (notes !== undefined) {
+          post.notes.push(...notes)
+          this._backNotes[post.id] = []
+        }
+      }
+
+      // This is a novel entry, and needs to be processed
+      else {
+        if (entry.type === 0) {
+          this.backlogReplicated = true
+        }
+        if (entry.type !== 1) continue
+        if (entry.payload.length <= MAX_POST_SIZE_BYTES) {
+          post = this.entryToPost(entry)
+          // Skip entries that can't be interpreted as Posts
+          if (post === null) {
+            continue
+          }
+          this._postById[post.id] = post
+          
           // Add notes from other posts that came out of order
           const notes = this._backNotes[post.id]
           if (notes !== undefined) {
             post.notes.push(...notes)
             this._backNotes[post.id] = []
           }
-        }
-        // This is a novel post, and needs to be processed
-        else {
-          // Note that size is calculated before processing the post. The restriction is for transit size
-          const size = JSON.stringify(entry.payload.value).length * 2 // rough strlen to bytes conversion
-          if (size <= MAX_POST_SIZE_BYTES) {
-            post = this.entryToPost(entry)
-            this._postById[post.id] = post
-            
-            // Add notes from other posts that came out of order
-            const notes = this._backNotes[post.id]
-            if (notes !== undefined) {
-              post.notes.push(...notes)
-              this._backNotes[post.id] = []
+
+          for (const x of post.notes.filter(x => x.group && x.group === 'references')) {
+            const note = {
+              id: 'referenced-by-' + post.id + "-" + Math.random(),
+              type: <'INFO'>'INFO', // Why Typescript, why?
+              group: 'referenced-by',
+              message: post.id,
             }
-  
-            const self = this
-            post.notes.filter(x => x.group && x.group === 'references').forEach(x => {
-              const note = {
-                id: 'referenced-by-' + post.id + "-" + Math.random(),
-                type: <'INFO'>'INFO', // Why Typescript, why?
-                group: 'referenced-by',
-                message: post.id,
-              }
-              // The referenced post has been seen, so add the referenced-by note to it
-              const referencedPost = self._postById[x.message]
-              if (referencedPost) {
-                referencedPost.notes.push(note)
-              }
-              // If the reference hasn't been seen, add the note to it's back notes, so we can add it when it's seen
-              else {
-                if (!self._backNotes[x.message]) self._backNotes[x.message] = []
-                const notes = self._backNotes[x.message]
-                if (notes) notes.push(note)
-              }
-            })
-            if (!purge) {
-              this.posts.push(post)
+            // The referenced post has been seen, so add the referenced-by note to it
+            const referencedPost = this._postById[x.message]
+            if (referencedPost) {
+              referencedPost.notes.push(note)
             }
-          } else {
-            console.log("Refusing to parse and display recieved post of size " + size + "B", entry)
+            // If the reference hasn't been seen, add the note to it's back notes, so we can add it when it's seen
+            else {
+              if (!this._backNotes[x.message]) this._backNotes[x.message] = []
+              const notes = this._backNotes[x.message]
+              if (notes) notes.push(note)
+            }
           }
+          if (!purge) {
+            this.posts.push(post)
+          }
+        } else {
+          console.log("Refusing to parse and display recieved post of size " + entry.payload.length + "B", entry)
         }
-        if (purge) {
-          temp.push(post)
-        }
+      }
+      if (purge) {
+        temp.push(post)
       }
     }
     if (purge) {
@@ -263,6 +254,12 @@ export default class Thread {
       this.posts = this.posts.slice(start)
     }
     this.pruneUnusedPosts()
+    // Update progress
+    this.replicationProgress.done = this.posts.length
+    this.replicationProgress.target = this.postsToShow
+    if (this.replicationProgress.done >= this.replicationProgress.target) {
+      this.backlogReplicated = true
+    }
   }
   async pruneUnusedPosts() {
     const self = this
@@ -279,17 +276,22 @@ export default class Thread {
     
   }
   async destroy() {
-    this._pubsub.unsubscribe(this.address, this._pubSubHandlerInstance)
     if (this._syncedHandle) window.clearTimeout(this._syncedHandle)
-    await this._log.drop()
-    await this._log.close()
+    if (this._log) await this._log.destroy()
   }
-  entryToPost(entry: any): Post {
-    const myId = this._nodeInfo.id
-    let v: UnPost = entry.payload.value
+  entryToPost(entry: HashedEntry): Post | null {
+    if (entry.type === 2 || entry.type === 3) {
+      return null
+    }
+    let v: UnPost = JSON.parse((<RootEntry | AppendEntry>entry).payload.toString())
+
+    // Do some basic validation to ensure that this is actually an UnPost
+    if (v.fromId === undefined || v.kind === undefined || v.text === undefined || v.timestamp === undefined) {
+      return null
+    }
+
     let post: Post = Object.assign({}, v, {
-      id: entry.hash,
-      fromId: entry.id,
+      id: MH.toB58String(entry.hash),
       profile: Object.assign({}, defaultProfile, v.profile),
       notes: [],
       memberOf: [this],
@@ -308,8 +310,5 @@ export default class Thread {
       return pp(p, env)
     }, post)
     return post
-  }
-  _pubSubHandler() {
-
   }
 }

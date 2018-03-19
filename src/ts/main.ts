@@ -26,10 +26,10 @@ import Thread from 'types/thread.js'
 import store from './store'
 import isProd from 'utils/isProd'
 import UserConfig from 'types/userConfig';
+import Kelp from 'types/kelp'
 
 // Legacy imports
 const Ipfs = require('ipfs')
-const OrbitDB = require('orbit-db')
 
 // Set up IPFS
 import ipfsConfig from 'utils/ipfs.config'
@@ -56,9 +56,7 @@ const vm = new Vue({
 // Show spinner until IPFS is ready
 node.once('ready', () => node.id(async (err: Error, info: any) => {
   if (err) throw err
-  const orbit = new OrbitDB(node)
   store.commit('updateIpfsNode', {newIpfsNode: node, newInfo: info})
-  store.commit('updateDB', {newDB: orbit})
 
   // Needs to wait on node info to populate (You) nickname
   // Retrieve user profile configs from storage backend

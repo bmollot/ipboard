@@ -19,7 +19,6 @@ export default new Vuex.Store({
       id: "",
       publicKey: "",
     },
-    database: <any>null,
     globalData: new LocalStore(isProd ? 'global/data' : 'global/data-dev'),
     globalConfig: new LocalStore(isProd ? 'global/config' : 'global/config-dev'),
     userConfigs: <stringToLocalStore<UserConfig>>{},
@@ -27,7 +26,7 @@ export default new Vuex.Store({
     currentUser: "default",
   },
   getters: {
-    isDBReady: state => state.database !== null,
+    isDBReady: state => state.ipfsNode !== null,
     areUsersReady: state => Object.keys(state.userConfigs).length !== 0,
     userConfigs: state => state.userConfigs,
     threadConfigs: state => state.threadConfigs,
@@ -36,9 +35,6 @@ export default new Vuex.Store({
     updateIpfsNode(state, {newIpfsNode, newInfo}) {
       state.ipfsNode = newIpfsNode,
       state.ipfsInfo = newInfo
-    },
-    updateDB(state, {newDB}) {
-      state.database = newDB
     },
     updateUserConfig(state, newUser: LocalStore<UserConfig>) {
       Vue.set(state.userConfigs, newUser.data.userName, newUser)

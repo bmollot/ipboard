@@ -68,13 +68,7 @@ export default class ThreadView extends Vue {
   }
 
   created() {
-    const self = this
-    this.thread.init(this.$store.state.database).then(async () => {
-      self.threadConfig = new ThreadConfig(self.thread.address)
-      await self.$store.dispatch('addThreadConfig', self.threadConfig)
-      self.ready = true
-    })
-    
+    this.updateViewedThread('welcome', 100, true)
   }
 
   mounted() {
@@ -83,14 +77,14 @@ export default class ThreadView extends Vue {
       if (!(document.activeElement instanceof HTMLInputElement
             || document.activeElement instanceof HTMLTextAreaElement)) {
         if (ev.key === 'a') {
-          const footer = <ThreadFooter> self.$refs.footer
+          const footer: ThreadFooter = <ThreadFooter> self.$refs.footer
           if (!footer.composing) {
             footer.toComposeMode()
             ev.preventDefault()
           }
         }
         if (ev.key === 'r') {
-          const footer = <ThreadFooter> self.$refs.footer
+          const footer: ThreadFooter = <ThreadFooter> self.$refs.footer
           const posts = self.thread.posts
           if (!footer.composing) {
             if (posts.length > 0) {
@@ -103,7 +97,7 @@ export default class ThreadView extends Vue {
           }
         }
         if (ev.key === 'u') {
-          const footer = <ThreadFooter> self.$refs.footer
+          const footer: ThreadFooter = <ThreadFooter> self.$refs.footer
           footer.toComposeMode(() => {
             const filein = footer.$refs.filein
             if (filein instanceof HTMLInputElement) {
@@ -116,8 +110,8 @@ export default class ThreadView extends Vue {
     })
   }
 
-  get db() {
-    return this.$store.state.database
+  get ipfsNode() {
+    return this.$store.state.ipfsNode
   }
   get posts() {
     return this.thread.posts
@@ -132,15 +126,28 @@ export default class ThreadView extends Vue {
     this.thread.post(msg, this.userConfig.data.profile(), attachment)
   }
   replyTo(postId: string) {
-    let footer = this.$refs.footer
-    if (footer instanceof ThreadFooter) {
+    if (this.$refs.footer instanceof ThreadFooter) {
+      const footer: ThreadFooter = <ThreadFooter> this.$refs.footer
       footer.replyTo(postId)
     }
   }
-  updateViewedThread(newThreadId: string, postsToShow: number) {
-    this.thread.destroy()
-    this.thread = new Thread(newThreadId, postsToShow)
-    this.thread.init(this.db)
+  async updateViewedThread(newThreadId: string, postsToShow: number, dontReplace = false) {
+    this.ready = false
+
+    if (!dontReplace) {
+      // Destroy current thread
+      await this.thread.destroy()
+      // Make and init a new one
+      this.thread = new Thread(newThreadId, postsToShow)
+    }
+    
+    await this.thread.init(this.ipfsNode)
+
+    // Load in/create this new thread's config
+    this.threadConfig = new ThreadConfig(this.thread.address)
+    await this.$store.dispatch('addThreadConfig', this.threadConfig)
+    
+    this.ready = true
   }
   uploadFile(file: File) {
     this.uploadStatus = {

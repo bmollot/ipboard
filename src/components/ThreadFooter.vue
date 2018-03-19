@@ -204,6 +204,7 @@ export default class ThreadFooter extends Vue {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  flex-wrap: wrap-reverse;
 }
 .upload-preview-container {
   flex-grow: 1;

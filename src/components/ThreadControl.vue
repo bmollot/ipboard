@@ -57,12 +57,7 @@ export default class ThreadControl extends Vue {
     return this.thread.address
   }
   get threadId(): string {
-    const res = /\/orbitdb\/([0-z])*\/(.*)/.exec(this.threadAddress)
-    if (res) {
-      return res[2]
-    } else {
-      return "null"
-    }
+    return this.thread.id
   }
   get prettyProgress(): string {
     const p = this.thread.replicationProgress

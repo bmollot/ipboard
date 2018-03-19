@@ -9,7 +9,6 @@
 <script lang="ts">
 import Vue from 'vue'
 import Component from 'vue-class-component'
-import {mapState} from 'vuex'
 
 import PostContainer from 'comp/PostContainer.vue'
 
@@ -28,9 +27,6 @@ import Thread from 'types/thread'
 })
 export default class App extends Vue {
 
-  get db() {
-    return this.$store.state.ipfsNode
-  }
   get dbReady() {
     return this.$store.getters.isDBReady
   }
